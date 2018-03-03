@@ -1,2 +1,4 @@
-# 7drl-2018
-7 Day Roguelike 2018
+# ARDOR
+7 Day Roguelike - 2018 entry.
+
+Uses TDL.
