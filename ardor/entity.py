@@ -12,11 +12,11 @@ class Entity:
 
         self.symbol = symbol[0]
 
-    def move_to(self, new_x: int, new_y: int):
+    def move_to(self, new_x: int, new_y: int) -> None:
         self.x = new_x
         self.y = new_y
 
-    def draw(self, console: tcod.console.Console):
+    def draw(self, console: tcod.console.Console) -> None:
         tcod.console_put_char(console, self.x, self.y,
                               self.symbol, tcod.BKGND_NONE)
 

@@ -5,6 +5,11 @@ import tcod
 
 from ardor.player import Player
 from ardor.stats import Stats
+from ardor.events import GameEvent, MovementEvent
+from ardor.consoles import EventConsole
+
+from typing import List
+
 
 ROOT_WIDTH = 80
 ROOT_HEIGHT = 50
@@ -14,9 +19,6 @@ WORLD_HEIGHT = 20
 
 WORLD_SCREEN_X = 20
 WORLD_SCREEN_Y = 10
-
-EVENT_SCREEN_X = 0
-EVENT_SCREEN_Y = ROOT_HEIGHT-10
 
 font = os.path.join('data/fonts/consolas10x10_gs_tc.png')
 tcod.console_set_custom_font(
@@ -61,9 +63,10 @@ class Ardor:
     def __init__(self):
         self.world_console = tcod.console_new(
             WORLD_WIDTH, WORLD_HEIGHT)
-        self.event_console = tcod.console_new(20, 10)
+        self.event_console = EventConsole(x=1, y=ROOT_HEIGHT-11)
+
         self.player = Player(20, 10, '@', Stats(20))
-        self.recompute = True
+        self.recompute_lighting = True
         self.torch = True
         self.map = None
         self.noise = None
@@ -83,9 +86,6 @@ class Ardor:
                                    dtype=np.uint8)
         self.dark_map_bg[SAMPLE_MAP[:] == '#'] = DARK_WALL
 
-    def draw_ui(self):
-        pass
-
     def on_enter(self):
         tcod.sys_set_fps(60)
         # we draw the foreground only the first time.
@@ -93,7 +93,6 @@ class Ardor:
         #  the rest impacts only the background color
         # draw the help text & player @
         tcod.console_clear(self.world_console)
-        self.draw_ui()
         tcod.console_put_char(
             self.world_console,
             self.player.x, self.player.y, '@', tcod.BKGND_NONE)
@@ -102,14 +101,14 @@ class Ardor:
         self.world_console.fg[np.where(SAMPLE_MAP == '=')] = tcod.black
 
     def render(self, delta_time: float) -> None:
-        self.render_event_log()
+        self.event_console.render()
 
         dx = 0.0
         dy = 0.0
         di = 0.0
 
-        if self.recompute:
-            self.recompute = False
+        if self.recompute_lighting:
+            self.recompute_lighting = False
             self.map.compute_fov(
                 self.player.x,
                 self.player.y,
@@ -154,36 +153,49 @@ class Ardor:
             where_fov = np.where(self.map.fov[:])
             self.world_console.bg[where_fov] = self.light_map_bg[where_fov]
 
-    def render_event_log(self) -> None:
-        self.event_console.default_fg = tcod.grey
-        self.event_console.default_bg = tcod.black
-        out = ["Did a thing", "Did another thing"]
-        for i, msg in enumerate(out):
-            self.event_console.print_(
-                0, self.event_console.height - (len(out) - i),
-                '%d %s' % (i, msg.ljust(18)),
-                tcod.BKGND_SET, tcod.LEFT
-            )
-
     def blit_consoles(self, target: tcod.console.Console) -> None:
         self.world_console.blit(
             0, 0, self.world_console.width, self.world_console.height,
             target, WORLD_SCREEN_X, WORLD_SCREEN_Y)
+        self.event_console.blit(target)
 
-        self.event_console.blit(
-            0, 0, self.event_console.width, self.event_console.height,
-            target, EVENT_SCREEN_X, EVENT_SCREEN_Y)
+    def handle_events(self) -> None:
+        key = tcod.Key()
+        mouse = tcod.Mouse()
+        events = []  # type: List[GameEvent]
 
-    def on_mouse(self, mouse) -> None:
-        pass
+        EVENT_MASK = tcod.EVENT_MOUSE | tcod.EVENT_KEY_PRESS
+        while tcod.sys_check_for_event(EVENT_MASK, key, mouse):
+            events += self.on_mouse(mouse)
+            events += self.on_key(key)
 
-    def on_key(self, key: tcod.Key) -> None:
+            if key.vk == tcod.KEY_ENTER and key.lalt:
+                tcod.console_set_fullscreen(not tcod.console_is_fullscreen())
+            elif key.vk == tcod.KEY_PRINTSCREEN or key.c == 'p':
+                print("screenshot")
+                if key.lalt:
+                    tcod.console_save_apf(None, "samples.apf")
+                    print("apf")
+                else:
+                    tcod.sys_save_screenshot()
+                    print("png")
+            elif key.vk == tcod.KEY_ESCAPE:
+                raise SystemExit()
+
+        self.event_console.add_events(events)
+
+    def on_mouse(self, mouse) -> List[GameEvent]:
+        return []
+
+    def on_key(self, key: tcod.Key) -> List[GameEvent]:
         MOVE_KEYS = {
             ord('k'): (0, -1),
             ord('h'): (-1, 0),
             ord('j'): (0, 1),
             ord('l'): (1, 0),
         }
+
+        events = []  # type: List[GameEvent]
 
         if key.c in MOVE_KEYS:
             x, y = MOVE_KEYS[key.c]
@@ -198,15 +210,16 @@ class Ardor:
                 tcod.console_put_char(self.world_console,
                                       self.player.x, self.player.y, '@',
                                       tcod.BKGND_NONE)
-                self.recompute = True
+                self.recompute_lighting = True
+                events.append(MovementEvent(self.player, dest_x, dest_y))
         elif key.c == ord('t'):
             self.torch = not self.torch
-            self.draw_ui()
-            self.recompute = True
+            self.recompute_lighting = True
         elif key.c == ord('w'):
             self.light_walls = not self.light_walls
-            self.draw_ui()
-            self.recompute = True
+            self.recompute_lighting = True
+
+        return events
 
 
 def main():
@@ -219,34 +232,13 @@ def main():
         root_console.default_fg = (255, 255, 255)
         root_console.default_bg = (0, 0, 0)
 
+        ardor.handle_events()
         ardor.render(tcod.sys_get_last_frame_length())
+
         ardor.blit_consoles(root_console)
 
         draw_stats(root_console)
-        handle_events(ardor)
         tcod.console_flush()
-
-
-def handle_events(ardor: Ardor) -> None:
-    key = tcod.Key()
-    mouse = tcod.Mouse()
-    EVENT_MASK = tcod.EVENT_MOUSE | tcod.EVENT_KEY_PRESS
-    while tcod.sys_check_for_event(EVENT_MASK, key, mouse):
-        ardor.on_mouse(mouse)
-        ardor.on_key(key)
-
-        if key.vk == tcod.KEY_ENTER and key.lalt:
-            tcod.console_set_fullscreen(not tcod.console_is_fullscreen())
-        elif key.vk == tcod.KEY_PRINTSCREEN or key.c == 'p':
-            print("screenshot")
-            if key.lalt:
-                tcod.console_save_apf(None, "samples.apf")
-                print("apf")
-            else:
-                tcod.sys_save_screenshot()
-                print("png")
-        elif key.vk == tcod.KEY_ESCAPE:
-            raise SystemExit()
 
 
 def draw_stats(root_console: tcod.console.Console) -> None:
