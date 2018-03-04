@@ -36,7 +36,7 @@ class PickupEvent(GameEvent):
 
     def __init__(self, entity: Entity, item: Item) -> None:
         super().__init__("{} picked up {}".format(
-            entity.symbol, item.mass, item.name
+            entity.symbol, item.name
         ), emit=True)
 
         self.entity = entity

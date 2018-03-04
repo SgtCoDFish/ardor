@@ -10,7 +10,7 @@ from ardor.events import (
     GameEvent, MovementEvent, NothingThereEvent,
     PickupEvent, InventoryFullEvent
 )
-from ardor.consoles import EventConsole, WorldConsole
+from ardor.consoles import EventConsole, WorldConsole, HUDConsole
 
 from typing import List
 
@@ -65,6 +65,7 @@ class Ardor:
             x=1, y=ROOT_HEIGHT-econsole_height,
             width=30, height=econsole_height
         )
+
         self.world_console = WorldConsole(
             x=WORLD_SCREEN_X, y=WORLD_SCREEN_Y,
             world_map=Map(
@@ -73,23 +74,30 @@ class Ardor:
             player=self.player
         )
 
+        self.hud_console = HUDConsole(
+            x=1, y=1, width=30, height=10, target=self.player
+        )
+
         self.world_console.add_entity(ItemEntity(
-            30, 12, "s", Item("Dagger of Phoebe", 1.0, 2.0)
+            34, 12, "s", Item("Dagger", 1.0, 6.0)
         ))
 
     def on_enter(self):
         tcod.sys_set_fps(60)
         self.event_console.clear()
         self.world_console.clear()
+        self.hud_console.clear()
         self.render(0.0)
 
     def render(self, delta_time: float) -> None:
         self.event_console.render()
         self.world_console.render()
+        self.hud_console.render()
 
     def blit_consoles(self, target: tcod.console.Console) -> None:
         self.world_console.blit(target)
         self.event_console.blit(target)
+        self.hud_console.blit(target)
 
     def handle_events(self) -> None:
         key = tcod.Key()

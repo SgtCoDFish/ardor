@@ -18,7 +18,7 @@ class Inventory:
         self.capacity = self.max_capacity
 
     def add_item(self, item: Item) -> PickupResult:
-        print("We have", self.capacity, "; trying to pick up", item.volume)
+        # print("We have", self.capacity, "; trying to pick up", item.volume)
         if item.volume > self.capacity:
             return PickupResult.TOO_BIG
 
