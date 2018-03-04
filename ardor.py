@@ -3,8 +3,13 @@ import tcod
 
 from ardor.player import Player
 from ardor.map import Map
+from ardor.item import Item, ItemEntity
+from ardor.inventory import PickupResult
 from ardor.stats import Stats
-from ardor.events import GameEvent, MovementEvent
+from ardor.events import (
+    GameEvent, MovementEvent, NothingThereEvent,
+    PickupEvent, InventoryFullEvent
+)
 from ardor.consoles import EventConsole, WorldConsole
 
 from typing import List
@@ -16,8 +21,8 @@ ROOT_HEIGHT = 50
 WORLD_WIDTH = 46
 WORLD_HEIGHT = 20
 
-WORLD_SCREEN_X = 20
-WORLD_SCREEN_Y = 10
+WORLD_SCREEN_X = ROOT_WIDTH - WORLD_WIDTH - 1
+WORLD_SCREEN_Y = 1
 
 font = os.path.join('data/fonts/consolas10x10_gs_tc.png')
 tcod.console_set_custom_font(
@@ -51,8 +56,15 @@ class Ardor:
 
     def __init__(self):
         self.player = Player(20, 10, '@', Stats(20))
+        self.player.inventory.add_item(Item(
+            "Healing Potion", 1.0, 2.0
+        ))
 
-        self.event_console = EventConsole(x=1, y=ROOT_HEIGHT-11)
+        econsole_height = ROOT_HEIGHT // 2
+        self.event_console = EventConsole(
+            x=1, y=ROOT_HEIGHT-econsole_height,
+            width=30, height=econsole_height
+        )
         self.world_console = WorldConsole(
             x=WORLD_SCREEN_X, y=WORLD_SCREEN_Y,
             world_map=Map(
@@ -61,14 +73,19 @@ class Ardor:
             player=self.player
         )
 
+        self.world_console.add_entity(ItemEntity(
+            30, 12, "s", Item("Dagger of Phoebe", 1.0, 2.0)
+        ))
+
     def on_enter(self):
         tcod.sys_set_fps(60)
+        self.event_console.clear()
+        self.world_console.clear()
         self.render(0.0)
 
     def render(self, delta_time: float) -> None:
         self.event_console.render()
         self.world_console.render()
-        self.player.draw(self.world_console.console)
 
     def blit_consoles(self, target: tcod.console.Console) -> None:
         self.world_console.blit(target)
@@ -130,6 +147,22 @@ class Ardor:
         elif key.c == ord('t'):
             self.world_console.recompute_lighting = True
             self.player.torch = not self.player.torch
+        elif key.c == ord(','):
+            item = self.world_console.pop_item(self.player.x, self.player.y)
+
+            if item is None:
+                events.append(NothingThereEvent())
+            else:
+                result = self.player.inventory.add_item(
+                    item.item
+                )
+
+                if result != PickupResult.SUCCESS:
+                    events.append(InventoryFullEvent(
+                        self.player, item.item))
+                    self.world_console.add_entity(item)
+                else:
+                    events.append(PickupEvent(self.player, item.item))
 
         return events
 

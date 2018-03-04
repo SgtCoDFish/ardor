@@ -6,10 +6,12 @@ import numpy as np
 from collections import deque
 
 from ardor.map import Map
+from ardor.entity import Entity
 from ardor.events import GameEvent
 from ardor.player import Player
+from ardor.item import ItemEntity
 
-from typing import List
+from typing import List, Optional
 
 
 DARK_WALL = tcod.Color(0, 0, 100)
@@ -47,7 +49,7 @@ class Console(abc.ABC):
 class EventConsole(Console):
 
     def __init__(self, x: int, y: int,
-                 width: int=20, height: int=15) -> None:
+                 width: int, height: int) -> None:
         super().__init__(x, y, width, height)
         self.event_messages = deque(maxlen=(self.height - 1))  # type: deque
 
@@ -70,7 +72,7 @@ class EventConsole(Console):
 
 class WorldConsole(Console):
 
-    def __init__(self, x: int, y: int, world_map: Map, player: Player):
+    def __init__(self, x: int, y: int, world_map: Map, player: Player) -> None:
         super().__init__(x, y, world_map.width, world_map.height)
         self.player = player
         self.map = world_map
@@ -85,66 +87,58 @@ class WorldConsole(Console):
 
         self.light_walls = True
 
-        # 1d noise for the torch flickering
-        self.noise = tcod.noise_new(1, 1.0, 1.0)
-        self.torchx = 0.0
+        self.entities = []  # type: List[GameEntity]
+        self.entity_grid = np.empty(self.map.grid.shape, dtype=object)
+        for i in self.entity_grid:
+            for j in range(len(i)):
+                i[j] = []
+
+    def add_entity(self, entity: Entity) -> None:
+        self.entities.append(entity)
+        self.entity_grid[entity.y][entity.x].append(entity)
+
+    def remove_entity(self, entity: Entity) -> None:
+        self.entities.remove(entity)
+        self.entity_grid[entity.y][entity.x].remove(entity)
+
+    def pop_item(self, x: int, y: int) -> Optional[ItemEntity]:
+        ents = self.entity_grid[y][x]
+        if len(ents) == 0:
+            return None
+
+        r = next((x for x in ents if isinstance(x, ItemEntity)), None)
+
+        if r is not None:
+            self.remove_entity(r)
+
+        return r
 
     def render(self) -> None:
         # self.clear()
-
-        dx = 0.0
-        dy = 0.0
-        di = 0.0
 
         if self.recompute_lighting:
             self.recompute_lighting = False
             self.map.map.compute_fov(
                 self.player.x,
                 self.player.y,
-                TORCH_RADIUS if self.player.torch else 0,
+                TORCH_RADIUS if self.player.torch else 2,
                 self.light_walls,
                 tcod.FOV_SHADOW
             )
             self.console.bg[:] = self.dark_map_bg[:]
-            if self.player.torch:
-                # slightly change the perlin noise parameter
-                self.torchx += 0.1
-                # randomize the light position between -1.5 and 1.5
-                tdx = [self.torchx + 20.0]
-                dx = tcod.noise_get(self.noise, tdx, tcod.NOISE_SIMPLEX) * 1.5
-                tdx[0] += 30.0
-                dy = tcod.noise_get(self.noise, tdx, tcod.NOISE_SIMPLEX) * 1.5
-                di = 0.2 * tcod.noise_get(
-                    self.noise, [self.torchx], tcod.NOISE_SIMPLEX
-                )
-                print(self.map.width, self.map.height)
-                print(self.player.x, self.player.y)
-
-                mgrid = np.mgrid[:self.map.width, :self.map.height]
-                # get squared distance
-                light = ((mgrid[0] - self.player.y + dy) ** 2 +
-                         (mgrid[1] - self.player.x + dx) ** 2)
-                light = light.astype(np.float16)
-                print("light:", light)
-                where_visible = np.where((light < SQUARED_TORCH_RADIUS) &
-                                         self.map.map.fov[:])
-                light[where_visible] = (
-                    SQUARED_TORCH_RADIUS - light[where_visible]
-                )
-                light[where_visible] /= SQUARED_TORCH_RADIUS
-                light[where_visible] += di
-                light[where_visible] = light[where_visible].clip(0, 1)
-
-                for yx in zip(*where_visible):
-                    self.world_console.console.bg[yx] = tcod.color_lerp(
-                        tuple(self.dark_map_bg[yx]),
-                        tuple(self.light_map_bg[yx]),
-                        light[yx],
-                    )
-        else:
             where_fov = np.where(self.map.map.fov[:])
             self.console.bg[where_fov] = \
                 self.light_map_bg[where_fov]
 
         self.console.ch[np.where(self.map.grid == '=')] = tcod.CHAR_DHLINE
         self.console.fg[np.where(self.map.grid == '=')] = tcod.black
+
+        for e in self.entities:
+            if self.map.map.fov[e.y][e.x]:
+                e.lit = True
+                e.draw(self.console)
+            else:
+                e.lit = False
+                e.undraw(self.console)
+
+        self.player.draw(self.console)
