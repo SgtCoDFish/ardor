@@ -8,3 +8,5 @@ class Player(Entity, Battler):
                  symbol: str, stats: Stats) -> None:
         Entity.__init__(self, initial_x, initial_y, symbol)
         Battler.__init__(self, stats)
+
+        self.torch = True

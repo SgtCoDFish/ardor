@@ -1,12 +1,11 @@
 import os
-
-import numpy as np
 import tcod
 
 from ardor.player import Player
+from ardor.map import Map
 from ardor.stats import Stats
 from ardor.events import GameEvent, MovementEvent
-from ardor.consoles import EventConsole
+from ardor.consoles import EventConsole, WorldConsole
 
 from typing import List
 
@@ -23,9 +22,6 @@ WORLD_SCREEN_Y = 10
 font = os.path.join('data/fonts/consolas10x10_gs_tc.png')
 tcod.console_set_custom_font(
     font, tcod.FONT_TYPE_GREYSCALE | tcod.FONT_LAYOUT_TCOD)
-
-TORCH_RADIUS = 4
-SQUARED_TORCH_RADIUS = TORCH_RADIUS * TORCH_RADIUS
 
 SAMPLE_MAP = [
     '##############################################',
@@ -50,113 +46,32 @@ SAMPLE_MAP = [
     '##############################################',
 ]
 
-SAMPLE_MAP = np.array([list(line) for line in SAMPLE_MAP])
-
-DARK_WALL = tcod.Color(0, 0, 100)
-LIGHT_WALL = tcod.Color(130, 110, 50)
-DARK_GROUND = tcod.Color(50, 50, 150)
-LIGHT_GROUND = tcod.Color(200, 180, 50)
-
 
 class Ardor:
 
     def __init__(self):
-        self.world_console = tcod.console_new(
-            WORLD_WIDTH, WORLD_HEIGHT)
-        self.event_console = EventConsole(x=1, y=ROOT_HEIGHT-11)
-
         self.player = Player(20, 10, '@', Stats(20))
-        self.recompute_lighting = True
-        self.torch = True
-        self.map = None
-        self.noise = None
-        self.torchx = 0.0
-        self.light_walls = True
-        # 1d noise for the torch flickering
-        self.noise = tcod.noise_new(1, 1.0, 1.0)
 
-        self.map = tcod.map_new(WORLD_WIDTH, WORLD_HEIGHT)
-        self.map.walkable[:] = SAMPLE_MAP[:] == ' '
-        self.map.transparent[:] = self.map.walkable[:] | (SAMPLE_MAP == '=')
-
-        self.light_map_bg = np.full(SAMPLE_MAP.shape + (3,), LIGHT_GROUND,
-                                    dtype=np.uint8)
-        self.light_map_bg[SAMPLE_MAP[:] == '#'] = LIGHT_WALL
-        self.dark_map_bg = np.full(SAMPLE_MAP.shape + (3,), DARK_GROUND,
-                                   dtype=np.uint8)
-        self.dark_map_bg[SAMPLE_MAP[:] == '#'] = DARK_WALL
+        self.event_console = EventConsole(x=1, y=ROOT_HEIGHT-11)
+        self.world_console = WorldConsole(
+            x=WORLD_SCREEN_X, y=WORLD_SCREEN_Y,
+            world_map=Map(
+                WORLD_WIDTH, WORLD_HEIGHT, SAMPLE_MAP
+            ),
+            player=self.player
+        )
 
     def on_enter(self):
         tcod.sys_set_fps(60)
-        # we draw the foreground only the first time.
-        #  during the player movement, only the @ is redrawn.
-        #  the rest impacts only the background color
-        # draw the help text & player @
-        tcod.console_clear(self.world_console)
-        tcod.console_put_char(
-            self.world_console,
-            self.player.x, self.player.y, '@', tcod.BKGND_NONE)
-        # draw windows
-        self.world_console.ch[np.where(SAMPLE_MAP == '=')] = tcod.CHAR_DHLINE
-        self.world_console.fg[np.where(SAMPLE_MAP == '=')] = tcod.black
+        self.render(0.0)
 
     def render(self, delta_time: float) -> None:
         self.event_console.render()
-
-        dx = 0.0
-        dy = 0.0
-        di = 0.0
-
-        if self.recompute_lighting:
-            self.recompute_lighting = False
-            self.map.compute_fov(
-                self.player.x,
-                self.player.y,
-                TORCH_RADIUS if self.torch else 0,
-                self.light_walls,
-                tcod.FOV_SHADOW
-            )
-            self.world_console.bg[:] = self.dark_map_bg[:]
-            if self.torch:
-                # slightly change the perlin noise parameter
-                self.torchx += 0.1
-                # randomize the light position between -1.5 and 1.5
-                tdx = [self.torchx + 20.0]
-                dx = tcod.noise_get(self.noise, tdx, tcod.NOISE_SIMPLEX) * 1.5
-                tdx[0] += 30.0
-                dy = tcod.noise_get(self.noise, tdx, tcod.NOISE_SIMPLEX) * 1.5
-                di = 0.2 * tcod.noise_get(
-                    self.noise, [self.torchx], tcod.NOISE_SIMPLEX
-                )
-                # where_fov = np.where(self.map.fov[:])
-                mgrid = np.mgrid[:WORLD_HEIGHT, :WORLD_WIDTH]
-                # get squared distance
-                light = ((mgrid[0] - self.player.y + dy) ** 2 +
-                         (mgrid[1] - self.player.x + dx) ** 2)
-                light = light.astype(np.float16)
-                where_visible = np.where((light < SQUARED_TORCH_RADIUS) &
-                                         self.map.fov[:])
-                light[where_visible] = (
-                    SQUARED_TORCH_RADIUS - light[where_visible]
-                )
-                light[where_visible] /= SQUARED_TORCH_RADIUS
-                light[where_visible] += di
-                light[where_visible] = light[where_visible].clip(0, 1)
-
-                for yx in zip(*where_visible):
-                    self.world_console.bg[yx] = tcod.color_lerp(
-                        tuple(self.dark_map_bg[yx]),
-                        tuple(self.light_map_bg[yx]),
-                        light[yx],
-                    )
-        else:
-            where_fov = np.where(self.map.fov[:])
-            self.world_console.bg[where_fov] = self.light_map_bg[where_fov]
+        self.world_console.render()
+        self.player.draw(self.world_console.console)
 
     def blit_consoles(self, target: tcod.console.Console) -> None:
-        self.world_console.blit(
-            0, 0, self.world_console.width, self.world_console.height,
-            target, WORLD_SCREEN_X, WORLD_SCREEN_Y)
+        self.world_console.blit(target)
         self.event_console.blit(target)
 
     def handle_events(self) -> None:
@@ -203,21 +118,18 @@ class Ardor:
             dest_y = self.player.y + y
 
             if SAMPLE_MAP[dest_y][dest_x] == ' ':
-                tcod.console_put_char(self.world_console,
+                tcod.console_put_char(self.world_console.console,
                                       self.player.x, self.player.y, ' ',
                                       tcod.BKGND_NONE)
                 self.player.move_to(dest_x, dest_y)
-                tcod.console_put_char(self.world_console,
+                tcod.console_put_char(self.world_console.console,
                                       self.player.x, self.player.y, '@',
                                       tcod.BKGND_NONE)
-                self.recompute_lighting = True
+                self.world_console.recompute_lighting = True
                 events.append(MovementEvent(self.player, dest_x, dest_y))
         elif key.c == ord('t'):
-            self.torch = not self.torch
-            self.recompute_lighting = True
-        elif key.c == ord('w'):
-            self.light_walls = not self.light_walls
-            self.recompute_lighting = True
+            self.world_console.recompute_lighting = True
+            self.player.torch = not self.player.torch
 
         return events
 
