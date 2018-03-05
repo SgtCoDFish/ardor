@@ -12,7 +12,7 @@ class PickupResult(Enum):
 class Inventory:
 
     def __init__(self, max_capacity: float) -> None:
-        self._contents = []  # type: List[Item]
+        self.contents = []  # type: List[Item]
 
         self.max_capacity = max_capacity
         self.capacity = self.max_capacity
@@ -22,7 +22,7 @@ class Inventory:
         if item.volume > self.capacity:
             return PickupResult.TOO_BIG
 
-        self._contents.append(item)
+        self.contents.append(item)
         self.capacity -= item.volume
 
         return PickupResult.SUCCESS

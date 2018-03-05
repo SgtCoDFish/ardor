@@ -10,7 +10,9 @@ from ardor.events import (
     GameEvent, MovementEvent, NothingThereEvent,
     PickupEvent, InventoryFullEvent
 )
-from ardor.consoles import EventConsole, WorldConsole, HUDConsole
+from ardor.consoles import (
+    EventConsole, WorldConsole, HUDConsole, InventoryConsole
+)
 
 from typing import List
 
@@ -59,6 +61,11 @@ class Ardor:
         self.player.inventory.add_item(Item(
             "Healing Potion", 1.0, 2.0
         ))
+        self.player.inventory.add_item(Item(
+            "Coal", 1.0, 1.0
+        ))
+
+        self.show_inventory = False
 
         econsole_height = ROOT_HEIGHT // 2
         self.event_console = EventConsole(
@@ -78,6 +85,12 @@ class Ardor:
             x=1, y=1, width=30, height=10, target=self.player
         )
 
+        self.inventory_console = InventoryConsole(
+            x=(ROOT_WIDTH // 4), y=(ROOT_HEIGHT // 4),
+            width=(ROOT_WIDTH // 2), height=(ROOT_HEIGHT // 2),
+            target=self.player.inventory
+        )
+
         self.world_console.add_entity(ItemEntity(
             34, 12, "s", Item("Dagger", 1.0, 6.0)
         ))
@@ -87,17 +100,23 @@ class Ardor:
         self.event_console.clear()
         self.world_console.clear()
         self.hud_console.clear()
-        self.render(0.0)
+        self.render()
 
-    def render(self, delta_time: float) -> None:
+    def render(self) -> None:
         self.event_console.render()
         self.world_console.render()
         self.hud_console.render()
+
+        if self.show_inventory:
+            self.inventory_console.render()
 
     def blit_consoles(self, target: tcod.console.Console) -> None:
         self.world_console.blit(target)
         self.event_console.blit(target)
         self.hud_console.blit(target)
+
+        if self.show_inventory:
+            self.inventory_console.blit(target)
 
     def handle_events(self) -> None:
         key = tcod.Key()
@@ -171,6 +190,8 @@ class Ardor:
                     self.world_console.add_entity(item)
                 else:
                     events.append(PickupEvent(self.player, item.item))
+        elif key.c == ord('i'):
+            self.show_inventory = not self.show_inventory
 
         return events
 
@@ -186,7 +207,8 @@ def main():
         root_console.default_bg = (0, 0, 0)
 
         ardor.handle_events()
-        ardor.render(tcod.sys_get_last_frame_length())
+        root_console.clear()
+        ardor.render()
 
         ardor.blit_consoles(root_console)
 

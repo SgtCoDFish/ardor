@@ -1,5 +1,6 @@
 import abc
 import tcod
+import tabulate
 
 import numpy as np
 
@@ -10,6 +11,7 @@ from ardor.entity import Entity
 from ardor.events import GameEvent
 from ardor.player import Player
 from ardor.item import ItemEntity
+from ardor.inventory import Inventory
 
 from typing import List, Optional
 
@@ -65,6 +67,34 @@ class HUDConsole(Console):
                 self.target.stats.max_hp
             ).ljust(self.width), tcod.BKGND_SET, tcod.LEFT
         )
+
+
+class InventoryConsole(Console):
+
+    def __init__(self, x: int, y: int,
+                 width: int, height: int,
+                 target: Inventory) -> None:
+        super().__init__(x, y, width, height)
+        self.target = target
+        self.headings = [
+            "Name",
+            "Mass",
+            "Volume"
+        ]
+
+    def render(self) -> None:
+        self.console.default_fg = tcod.white
+        self.console.default_bg = tcod.black
+
+        lines = tabulate.tabulate(
+            [[i.name, i.mass, i.volume] for i in self.target.contents],
+            self.headings, tablefmt="grid"
+        ).split("\n")
+
+        for i, v in enumerate(lines):
+            self.console.print_(
+                1, i + 1, v, tcod.BKGND_SET, tcod.LEFT
+            )
 
 
 class EventConsole(Console):
