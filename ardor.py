@@ -15,7 +15,7 @@ from ardor.consoles import (
 )
 from ardor.states import State
 
-from typing import List, Optional
+from typing import List
 
 
 ROOT_WIDTH = 80
@@ -54,6 +54,20 @@ SAMPLE_MAP = [
     '##############################################',
 ]
 
+MOVE_KEYS = {
+    ord('k'): (0, -1),
+    ord('h'): (-1, 0),
+    ord('j'): (0, 1),
+    ord('l'): (1, 0),
+}
+
+MOVE_VKEYS = {
+    tcod.KEY_UP: (0, -1),
+    tcod.KEY_LEFT: (-1, 0),
+    tcod.KEY_DOWN: (0, 1),
+    tcod.KEY_RIGHT: (1, 0)
+}
+
 
 class Ardor:
 
@@ -64,11 +78,10 @@ class Ardor:
         self.player.inventory.add_item(Item(
             "Healing Potion", 1.0, 2.0
         ))
-        self.player.inventory.add_item(Item(
-            "Coal", 1.0, 1.0
-        ))
-
-        self.show_inventory = False
+        for i in range(2):
+            self.player.inventory.add_item(Item(
+                "Coal" + str(i), 1.0, 1.0
+            ))
 
         econsole_height = ROOT_HEIGHT // 2
         self.event_console = EventConsole(
@@ -89,8 +102,9 @@ class Ardor:
         )
 
         self.inventory_console = InventoryConsole(
-            x=(ROOT_WIDTH // 4), y=(ROOT_HEIGHT // 4),
-            width=(ROOT_WIDTH // 2), height=(ROOT_HEIGHT // 2),
+            x=(ROOT_WIDTH // 8), y=(ROOT_HEIGHT // 8),
+            width=((ROOT_WIDTH * 3) // 4),
+            height=((ROOT_HEIGHT * 3) // 4),
             target=self.player.inventory
         )
 
@@ -110,7 +124,7 @@ class Ardor:
         self.world_console.render()
         self.hud_console.render()
 
-        if self.show_inventory:
+        if self.state == State.INVENTORY:
             self.inventory_console.render()
 
     def blit_consoles(self, target: tcod.console.Console) -> None:
@@ -118,7 +132,7 @@ class Ardor:
         self.event_console.blit(target)
         self.hud_console.blit(target)
 
-        if self.show_inventory:
+        if self.state == State.INVENTORY:
             self.inventory_console.blit(target)
 
     def handle_events(self) -> None:
@@ -141,7 +155,7 @@ class Ardor:
                 else:
                     tcod.sys_save_screenshot()
                     print("png")
-            elif key.vk == tcod.KEY_ESCAPE:
+            elif key.c == ord('q'):
                 raise SystemExit()
 
         self.event_console.add_events(events)
@@ -150,32 +164,20 @@ class Ardor:
         return []
 
     def on_key(self, key: tcod.Key) -> List[GameEvent]:
-        MOVE_KEYS = {
-            ord('k'): (0, -1),
-            ord('h'): (-1, 0),
-            ord('j'): (0, 1),
-            ord('l'): (1, 0),
-        }
+        if self.state == State.PLAY:
+            return self._on_key_play(key)
+        elif self.state == State.INVENTORY:
+            return self._on_key_inventory(key)
 
-        MOVE_VKEYS = {
-            tcod.KEY_UP: (0, -1),
-            tcod.KEY_LEFT: (-1, 0),
-            tcod.KEY_DOWN: (0, 1),
-            tcod.KEY_RIGHT: (1, 0)
-        }
-
+    def _on_key_play(self, key: tcod.Key) -> List[GameEvent]:
         events = []  # type: List[GameEvent]
 
         if key.vk in MOVE_VKEYS:
             x, y = MOVE_VKEYS[key.vk]
-            ev = self._do_move(x, y)
-            if ev is not None:
-                events.append(ev)
-        if key.c in MOVE_KEYS:
+            events += self._do_move(x, y)
+        elif key.c in MOVE_KEYS:
             x, y = MOVE_KEYS[key.c]
-            ev = self._do_move(x, y)
-            if ev is not None:
-                events.append(ev)
+            events += self._do_move(x, y)
         elif key.c == ord('t'):
             self.world_console.recompute_lighting = True
             self.player.torch = not self.player.torch
@@ -196,14 +198,30 @@ class Ardor:
                 else:
                     events.append(PickupEvent(self.player, item.item))
         elif key.c == ord('i'):
-            self.show_inventory = not self.show_inventory
+            self.state = State.INVENTORY
 
         return events
 
-    def on_key_inventory(self):
-        pass
+    def _on_key_inventory(self, key: tcod.Key) -> List[GameEvent]:
+        if key.vk == tcod.KEY_ESCAPE:
+            self.state = State.PLAY
+        elif key.vk in MOVE_VKEYS:
+            _, y = MOVE_VKEYS[key.vk]
+            self.inventory_console.cursor += y
+        elif key.c in MOVE_KEYS:
+            x, y = MOVE_KEYS[key.c]
+            self.inventory_console.cursor += y
+        elif key.vk == tcod.KEY_SPACE:
+            # TODO: this is debug
+            print(
+                self.player.inventory.contents[
+                    self.inventory_console.inventory_index()
+                ].name
+            )
 
-    def _do_move(self, x: int, y: int) -> Optional[GameEvent]:
+        return []
+
+    def _do_move(self, x: int, y: int) -> List[GameEvent]:
         dest_x = self.player.x + x
         dest_y = self.player.y + y
 
@@ -216,9 +234,9 @@ class Ardor:
                                   self.player.x, self.player.y, '@',
                                   tcod.BKGND_NONE)
             self.world_console.recompute_lighting = True
-            return MovementEvent(self.player, dest_x, dest_y)
+            return [MovementEvent(self.player, dest_x, dest_y)]
 
-        return None
+        return []
 
 
 def main():
