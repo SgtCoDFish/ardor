@@ -13,8 +13,9 @@ from ardor.events import (
 from ardor.consoles import (
     EventConsole, WorldConsole, HUDConsole, InventoryConsole
 )
+from ardor.states import State
 
-from typing import List
+from typing import List, Optional
 
 
 ROOT_WIDTH = 80
@@ -57,6 +58,8 @@ SAMPLE_MAP = [
 class Ardor:
 
     def __init__(self):
+        self.state = State.PLAY
+
         self.player = Player(20, 10, '@', Stats(20))
         self.player.inventory.add_item(Item(
             "Healing Potion", 1.0, 2.0
@@ -154,23 +157,25 @@ class Ardor:
             ord('l'): (1, 0),
         }
 
+        MOVE_VKEYS = {
+            tcod.KEY_UP: (0, -1),
+            tcod.KEY_LEFT: (-1, 0),
+            tcod.KEY_DOWN: (0, 1),
+            tcod.KEY_RIGHT: (1, 0)
+        }
+
         events = []  # type: List[GameEvent]
 
+        if key.vk in MOVE_VKEYS:
+            x, y = MOVE_VKEYS[key.vk]
+            ev = self._do_move(x, y)
+            if ev is not None:
+                events.append(ev)
         if key.c in MOVE_KEYS:
             x, y = MOVE_KEYS[key.c]
-            dest_x = self.player.x + x
-            dest_y = self.player.y + y
-
-            if SAMPLE_MAP[dest_y][dest_x] == ' ':
-                tcod.console_put_char(self.world_console.console,
-                                      self.player.x, self.player.y, ' ',
-                                      tcod.BKGND_NONE)
-                self.player.move_to(dest_x, dest_y)
-                tcod.console_put_char(self.world_console.console,
-                                      self.player.x, self.player.y, '@',
-                                      tcod.BKGND_NONE)
-                self.world_console.recompute_lighting = True
-                events.append(MovementEvent(self.player, dest_x, dest_y))
+            ev = self._do_move(x, y)
+            if ev is not None:
+                events.append(ev)
         elif key.c == ord('t'):
             self.world_console.recompute_lighting = True
             self.player.torch = not self.player.torch
@@ -194,6 +199,26 @@ class Ardor:
             self.show_inventory = not self.show_inventory
 
         return events
+
+    def on_key_inventory(self):
+        pass
+
+    def _do_move(self, x: int, y: int) -> Optional[GameEvent]:
+        dest_x = self.player.x + x
+        dest_y = self.player.y + y
+
+        if SAMPLE_MAP[dest_y][dest_x] == ' ':
+            tcod.console_put_char(self.world_console.console,
+                                  self.player.x, self.player.y, ' ',
+                                  tcod.BKGND_NONE)
+            self.player.move_to(dest_x, dest_y)
+            tcod.console_put_char(self.world_console.console,
+                                  self.player.x, self.player.y, '@',
+                                  tcod.BKGND_NONE)
+            self.world_console.recompute_lighting = True
+            return MovementEvent(self.player, dest_x, dest_y)
+
+        return None
 
 
 def main():

@@ -1,19 +1,14 @@
-import abc
 import tcod
-import tabulate
-
 import numpy as np
 
-from collections import deque
+from .console import Console
 
 from ardor.map import Map
 from ardor.entity import Entity
-from ardor.events import GameEvent
 from ardor.player import Player
 from ardor.item import ItemEntity
-from ardor.inventory import Inventory
 
-from typing import List, Optional
+from typing import Optional
 
 
 DARK_WALL = tcod.Color(0, 0, 100)
@@ -23,102 +18,6 @@ LIGHT_GROUND = tcod.Color(200, 180, 50)
 
 TORCH_RADIUS = 4
 SQUARED_TORCH_RADIUS = TORCH_RADIUS * TORCH_RADIUS
-
-
-class Console(abc.ABC):
-
-    def __init__(self, x: int, y: int,
-                 width: int, height: int) -> None:
-        self.x = x
-        self.y = y
-        self.width = width
-        self.height = height
-        self.console = tcod.console_new(self.width, self.height)
-
-    @abc.abstractmethod
-    def render(self) -> None:
-        pass
-
-    def blit(self, target: tcod.console.Console) -> None:
-        self.console.blit(
-            0, 0, self.width, self.height,
-            target, self.x, self.y)
-
-    def clear(self) -> None:
-        tcod.console_clear(self.console)
-
-
-class HUDConsole(Console):
-
-    def __init__(self, x: int, y: int,
-                 width: int, height: int,
-                 target: Entity) -> None:
-        super().__init__(x, y, width, height)
-        self.target = target
-
-    def render(self) -> None:
-        self.console.default_fg = tcod.grey
-        self.console.default_bg = tcod.black
-
-        self.console.print_(
-            0, 0, "{} HP: {}/{}".format(
-                self.target.symbol,
-                self.target.stats.hp,
-                self.target.stats.max_hp
-            ).ljust(self.width), tcod.BKGND_SET, tcod.LEFT
-        )
-
-
-class InventoryConsole(Console):
-
-    def __init__(self, x: int, y: int,
-                 width: int, height: int,
-                 target: Inventory) -> None:
-        super().__init__(x, y, width, height)
-        self.target = target
-        self.headings = [
-            "Name",
-            "Mass",
-            "Volume"
-        ]
-
-    def render(self) -> None:
-        self.console.default_fg = tcod.white
-        self.console.default_bg = tcod.black
-
-        lines = tabulate.tabulate(
-            [[i.name, i.mass, i.volume] for i in self.target.contents],
-            self.headings, tablefmt="grid"
-        ).split("\n")
-
-        for i, v in enumerate(lines):
-            self.console.print_(
-                1, i + 1, v, tcod.BKGND_SET, tcod.LEFT
-            )
-
-
-class EventConsole(Console):
-
-    def __init__(self, x: int, y: int,
-                 width: int, height: int) -> None:
-        super().__init__(x, y, width, height)
-        self.event_messages = deque(maxlen=(self.height - 1))  # type: deque
-
-    def add_events(self, events: List[GameEvent]) -> None:
-        for e in events:
-            if e.emit:
-                self.event_messages.appendleft(str(e))
-
-    def render(self) -> None:
-        self.console.default_fg = tcod.grey
-        self.console.default_bg = tcod.black
-
-        for i, ev in enumerate(self.event_messages):
-            self.console.print_(
-                0, self.height - i - 1,
-                ev.ljust(self.width),
-                tcod.BKGND_SET, tcod.LEFT
-            )
 
 
 class WorldConsole(Console):
