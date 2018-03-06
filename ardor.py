@@ -76,11 +76,11 @@ class Ardor:
 
         self.player = Player(20, 10, '@', Stats(20))
         self.player.inventory.add_item(Item(
-            "Healing Potion", 1.0, 2.0
+            "P", "Healing Potion", 1.0, 2.0
         ))
         for i in range(2):
             self.player.inventory.add_item(Item(
-                "Coal" + str(i), 1.0, 1.0
+                "c", "Coal" + str(i), 1.0, 1.0
             ))
 
         econsole_height = ROOT_HEIGHT // 2
@@ -109,7 +109,7 @@ class Ardor:
         )
 
         self.world_console.add_entity(ItemEntity(
-            34, 12, "s", Item("Dagger", 1.0, 6.0)
+            34, 12, Item("d", "Dagger", 1.0, 6.0)
         ))
 
     def on_enter(self):
@@ -211,13 +211,25 @@ class Ardor:
         elif key.c in MOVE_KEYS:
             x, y = MOVE_KEYS[key.c]
             self.inventory_console.cursor += y
-        elif key.vk == tcod.KEY_SPACE:
-            # TODO: this is debug
-            print(
-                self.player.inventory.contents[
-                    self.inventory_console.inventory_index()
-                ].name
-            )
+        elif key.vk == tcod.KEY_CHAR:
+            item = self.player.inventory.contents[
+                self.inventory_console.inventory_index()
+            ]
+
+            for name, char in item.actions:
+                if key.c != ord(char[0]):
+                    continue
+
+                if name == "drop":
+                    self.player.inventory.contents.remove(
+                        item
+                    )
+
+                    item_entity = ItemEntity(
+                        self.player.x, self.player.y,
+                        item
+                    )
+                    self.world_console.add_entity(item_entity)
 
         return []
 

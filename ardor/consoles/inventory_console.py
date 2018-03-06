@@ -102,5 +102,10 @@ class InventoryConsole(Console):
                 lines[i], tcod.BKGND_SET, tcod.LEFT
             )
 
+        self.console.print_(
+            1, self.height - 2,
+            "Space: Print", tcod.BKGND_SET, tcod.LEFT
+        )
+
     def _draw_cursor(self, pos: int) -> str:
-        return "  x" if self.cursor == pos else " "
+        return "x" if self.cursor == pos else " "
