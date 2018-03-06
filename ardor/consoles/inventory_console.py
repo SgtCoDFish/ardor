@@ -4,13 +4,10 @@ import tabulate
 from .console import Console
 
 from ardor.inventory import Inventory
+from ardor.util import clamp
 
 
 MENU_SIZE = 5
-
-
-def clamp(n: int, smallest: int, largest: int) -> None:
-    return max(smallest, min(n, largest))
 
 
 class InventoryConsole(Console):
@@ -102,9 +99,15 @@ class InventoryConsole(Console):
                 lines[i], tcod.BKGND_SET, tcod.LEFT
             )
 
+        item = self.target.contents[self.inventory_index()]
+
+        actions = " | ".join(
+            ["{}: {}".format(sym, name) for name, sym in item.actions]
+        )
+
         self.console.print_(
             1, self.height - 2,
-            "Space: Print", tcod.BKGND_SET, tcod.LEFT
+            actions, tcod.BKGND_SET, tcod.LEFT
         )
 
     def _draw_cursor(self, pos: int) -> str:

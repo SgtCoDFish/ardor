@@ -43,6 +43,17 @@ class PickupEvent(GameEvent):
         self.item = item
 
 
+class ItemDroppedEvent(GameEvent):
+
+    def __init__(self, entity: Entity, item: Item) -> None:
+        super().__init__("{} dropped {}".format(
+            entity.symbol, item.name
+        ), emit=True)
+
+        self.entity = entity
+        self.item = item
+
+
 class InventoryFullEvent(GameEvent):
 
     def __init__(self, entity: Entity, item: Item) -> None:
@@ -58,3 +69,13 @@ class NothingThereEvent(GameEvent):
 
     def __init__(self) -> None:
         super().__init__("There's nothing there!", emit=True)
+
+
+class HealingPotionEvent(GameEvent):
+
+    def __init__(self, entity: Entity, potency: int) -> None:
+        super().__init__("{} healed for {} with the potion".format(
+            entity.symbol, potency
+        ), emit=True)
+        self.entity = entity
+        self.potency = potency

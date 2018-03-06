@@ -3,12 +3,13 @@ import tcod
 
 from ardor.player import Player
 from ardor.map import Map
-from ardor.item import Item, ItemEntity
+from ardor.item import Item, ItemEntity, HealingPotion
 from ardor.inventory import PickupResult
 from ardor.stats import Stats
 from ardor.events import (
     GameEvent, MovementEvent, NothingThereEvent,
-    PickupEvent, InventoryFullEvent
+    PickupEvent, InventoryFullEvent, ItemDroppedEvent,
+    HealingPotionEvent
 )
 from ardor.consoles import (
     EventConsole, WorldConsole, HUDConsole, InventoryConsole
@@ -75,9 +76,7 @@ class Ardor:
         self.state = State.PLAY
 
         self.player = Player(20, 10, '@', Stats(20))
-        self.player.inventory.add_item(Item(
-            "P", "Healing Potion", 1.0, 2.0
-        ))
+        self.player.inventory.add_item(HealingPotion(5))
         for i in range(2):
             self.player.inventory.add_item(Item(
                 "c", "Coal" + str(i), 1.0, 1.0
@@ -155,8 +154,8 @@ class Ardor:
                 else:
                     tcod.sys_save_screenshot()
                     print("png")
-            elif key.c == ord('q'):
-                raise SystemExit()
+            # elif key.c == ord('q'):
+            #     raise SystemExit()
 
         self.event_console.add_events(events)
 
@@ -230,6 +229,16 @@ class Ardor:
                         item
                     )
                     self.world_console.add_entity(item_entity)
+                    return [ItemDroppedEvent(self.player, item)]
+                elif name == "quaff":
+                    self.player.inventory.contents.remove(
+                        item
+                    )
+
+                    self.player.stats.hp += item.potency
+                    return [HealingPotionEvent(self.player, item.potency)]
+                else:
+                    print("WARNING: unhandled interaction:", name)
 
         return []
 

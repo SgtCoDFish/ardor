@@ -18,6 +18,14 @@ class Item:
         self.actions = [("drop", "d")] + actions
 
 
+class HealingPotion(Item):
+
+    def __init__(self, potency: int):
+        super().__init__('P', "Healing Potion",
+                         1.0, 2.0, [("quaff", "q")])
+        self.potency = potency
+
+
 class ItemEntity(Entity):
 
     def __init__(self, x: int, y: int, item: Item) -> None:
