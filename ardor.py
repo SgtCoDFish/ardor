@@ -1,9 +1,10 @@
 import os
 import tcod
+import random
 
 from ardor.player import Player
 from ardor.map import Map
-from ardor.item import Item, ItemEntity, HealingPotion
+from ardor.item import Item, ItemEntity, Fuel, HealingPotion
 from ardor.inventory import PickupResult
 from ardor.stats import Stats
 from ardor.events import (
@@ -27,6 +28,8 @@ WORLD_HEIGHT = 20
 
 WORLD_SCREEN_X = ROOT_WIDTH - WORLD_WIDTH - 1
 WORLD_SCREEN_Y = 1
+
+TORCH_DRAIN = 1.5
 
 font = os.path.join('data/fonts/consolas10x10_gs_tc.png')
 tcod.console_set_custom_font(
@@ -73,13 +76,14 @@ MOVE_VKEYS = {
 class Ardor:
 
     def __init__(self):
+        random.seed(0)
         self.state = State.PLAY
 
-        self.player = Player(20, 10, '@', Stats(20))
+        self.player = Player(20, 10, '@', Stats(20, 100.0))
         self.player.inventory.add_item(HealingPotion(5))
         for i in range(2):
-            self.player.inventory.add_item(Item(
-                "c", "Coal" + str(i), 1.0, 1.0
+            self.player.inventory.add_item(Fuel(
+                "c", "Coal", i + 1.0 + random.random(), 1, 2.0
             ))
 
         econsole_height = ROOT_HEIGHT // 2
@@ -167,6 +171,9 @@ class Ardor:
             return self._on_key_play(key)
         elif self.state == State.INVENTORY:
             return self._on_key_inventory(key)
+        else:
+            print("Unhandled state:", self.state)
+            return []
 
     def _on_key_play(self, key: tcod.Key) -> List[GameEvent]:
         events = []  # type: List[GameEvent]
@@ -178,8 +185,13 @@ class Ardor:
             x, y = MOVE_KEYS[key.c]
             events += self._do_move(x, y)
         elif key.c == ord('t'):
-            self.world_console.recompute_lighting = True
-            self.player.torch = not self.player.torch
+            if self.player.torch is True:
+                self.world_console.recompute_lighting = True
+                self.player.torch = False
+            elif self.player.stats.cap >= TORCH_DRAIN:
+                self.world_console.recompute_lighting = True
+                self.player.torch = True
+                self.player.stats.cap -= TORCH_DRAIN
         elif key.c == ord(','):
             item = self.world_console.pop_item(self.player.x, self.player.y)
 
@@ -220,9 +232,7 @@ class Ardor:
                     continue
 
                 if name == "drop":
-                    self.player.inventory.contents.remove(
-                        item
-                    )
+                    self.player.inventory.contents.remove(item)
 
                     item_entity = ItemEntity(
                         self.player.x, self.player.y,
@@ -231,12 +241,13 @@ class Ardor:
                     self.world_console.add_entity(item_entity)
                     return [ItemDroppedEvent(self.player, item)]
                 elif name == "quaff":
-                    self.player.inventory.contents.remove(
-                        item
-                    )
+                    self.player.inventory.contents.remove(item)
 
                     self.player.stats.hp += item.potency
                     return [HealingPotionEvent(self.player, item.potency)]
+                elif name == "capify":
+                    self.player.inventory.contents.remove(item)
+                    self.player.stats.cap += item.energy_density * item.mass
                 else:
                     print("WARNING: unhandled interaction:", name)
 
@@ -247,14 +258,15 @@ class Ardor:
         dest_y = self.player.y + y
 
         if SAMPLE_MAP[dest_y][dest_x] == ' ':
-            tcod.console_put_char(self.world_console.console,
-                                  self.player.x, self.player.y, ' ',
-                                  tcod.BKGND_NONE)
             self.player.move_to(dest_x, dest_y)
             tcod.console_put_char(self.world_console.console,
                                   self.player.x, self.player.y, '@',
                                   tcod.BKGND_NONE)
             self.world_console.recompute_lighting = True
+            if self.player.torch is True:
+                self.player.stats.cap -= TORCH_DRAIN
+                if self.player.stats.cap == 0:
+                    self.player.torch = False
             return [MovementEvent(self.player, dest_x, dest_y)]
 
         return []

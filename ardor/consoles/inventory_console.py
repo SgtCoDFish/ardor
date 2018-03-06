@@ -50,12 +50,12 @@ class InventoryConsole(Console):
 
         self._cursor = clamp(val, 0, maxval - 1)
 
+    def inventory_index(self) -> int:
+        return self.cursor + (self.page * MENU_SIZE)
+
     @property
     def page(self) -> int:
         return self._page
-
-    def inventory_index(self) -> int:
-        return self.cursor + (self.page * MENU_SIZE)
 
     @page.setter
     def page(self, p) -> None:
@@ -80,18 +80,27 @@ class InventoryConsole(Console):
                  self.target.contents[
                      self._page * MENU_SIZE:(self._page + 1) * MENU_SIZE
                  ])],
-            self.headings, tablefmt="simple"
+            self.headings, tablefmt="simple", floatfmt=".2f"
         ).split("\n")
 
         headings = lines[0:2]
         lines = lines[2:]
 
-        offset_x = (self.width - len(lines[0])) // 2
+        back_msg = "ESC: Back"
+        self.console.print_(
+            self.width - 2 - len(back_msg), self.height - 2,
+            back_msg, tcod.BKGND_SET, tcod.LEFT
+        )
+
+        offset_x = (self.width - len(headings[0])) // 2
 
         for i, l in enumerate(headings):
             self.console.print_(
                 offset_x, i + 1, l, tcod.BKGND_SET, tcod.LEFT
             )
+
+        if len(lines) == 0:
+            return
 
         for i in range(len(lines)):
             self.console.print_(

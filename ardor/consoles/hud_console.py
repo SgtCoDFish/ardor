@@ -2,14 +2,14 @@ import tcod
 
 from .console import Console
 
-from ardor.entity import Entity
+from ardor.player import Player
 
 
 class HUDConsole(Console):
 
     def __init__(self, x: int, y: int,
                  width: int, height: int,
-                 target: Entity) -> None:
+                 target: Player) -> None:
         super().__init__(x, y, width, height)
         self.target = target
 
@@ -18,9 +18,11 @@ class HUDConsole(Console):
         self.console.default_bg = tcod.black
 
         self.console.print_(
-            0, 0, "{} HP: {}/{}".format(
+            0, 0, "{} HP: {}/{}\n CAP: {:.2f}/{:.2f}".format(
                 self.target.symbol,
                 self.target.stats.hp,
-                self.target.stats.max_hp
+                self.target.stats.max_hp,
+                self.target.stats.cap,
+                self.target.stats.max_cap
             ).ljust(self.width), tcod.BKGND_SET, tcod.LEFT
         )

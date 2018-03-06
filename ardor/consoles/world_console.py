@@ -8,7 +8,7 @@ from ardor.entity import Entity
 from ardor.player import Player
 from ardor.item import ItemEntity
 
-from typing import Optional
+from typing import Optional, List  # noqa
 
 
 DARK_WALL = tcod.Color(0, 0, 100)
@@ -37,7 +37,7 @@ class WorldConsole(Console):
 
         self.light_walls = True
 
-        self.entities = []  # type: List[GameEntity]
+        self.entities = []  # type: List[Entity]
         self.entity_grid = np.empty(self.map.grid.shape, dtype=object)
         for i in self.entity_grid:
             for j in range(len(i)):
@@ -64,7 +64,7 @@ class WorldConsole(Console):
         return r
 
     def render(self) -> None:
-        # self.clear()
+        self.clear()
 
         if self.recompute_lighting:
             self.recompute_lighting = False
@@ -75,10 +75,11 @@ class WorldConsole(Console):
                 self.light_walls,
                 tcod.FOV_SHADOW
             )
-            self.console.bg[:] = self.dark_map_bg[:]
-            where_fov = np.where(self.map.map.fov[:])
-            self.console.bg[where_fov] = \
-                self.light_map_bg[where_fov]
+
+        self.console.bg[:] = self.dark_map_bg[:]
+        where_fov = np.where(self.map.map.fov[:])
+        self.console.bg[where_fov] = \
+            self.light_map_bg[where_fov]
 
         self.console.ch[np.where(self.map.grid == '=')] = tcod.CHAR_DHLINE
         self.console.fg[np.where(self.map.grid == '=')] = tcod.black
