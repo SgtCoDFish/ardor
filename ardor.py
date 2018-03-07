@@ -7,6 +7,8 @@ from ardor.map import Map
 from ardor.item import Item, ItemEntity, Fuel, HealingPotion
 from ardor.inventory import PickupResult
 from ardor.stats import Stats
+from ardor.mobs import Mob
+from ardor.ai import AIType
 from ardor.events import (
     GameEvent, MovementEvent, NothingThereEvent,
     PickupEvent, InventoryFullEvent, ItemDroppedEvent,
@@ -31,7 +33,7 @@ WORLD_SCREEN_Y = 1
 
 TORCH_DRAIN = 1.5
 
-font = os.path.join('data/fonts/consolas10x10_gs_tc.png')
+font = os.path.join('data/fonts/consolas12x12_gs_tc.png')
 tcod.console_set_custom_font(
     font, tcod.FONT_TYPE_GREYSCALE | tcod.FONT_LAYOUT_TCOD)
 
@@ -111,9 +113,15 @@ class Ardor:
             target=self.player.inventory
         )
 
+        self.mobs = [
+            Mob(25, 10, 'G', Stats(5, 5), AIType.MINDLESS)
+        ]
         self.world_console.add_entity(ItemEntity(
             34, 12, Item("d", "Dagger", 1.0, 6.0)
         ))
+
+        for m in self.mobs:
+            self.world_console.add_entity(m)
 
     def on_enter(self):
         tcod.sys_set_fps(60)
@@ -138,7 +146,7 @@ class Ardor:
         if self.state == State.INVENTORY:
             self.inventory_console.blit(target)
 
-    def handle_events(self) -> None:
+    def handle_events(self) -> int:
         key = tcod.Key()
         mouse = tcod.Mouse()
         events = []  # type: List[GameEvent]
@@ -161,7 +169,31 @@ class Ardor:
             # elif key.c == ord('q'):
             #     raise SystemExit()
 
+        step_count = sum(int(isinstance(e, MovementEvent)) for e in events)
+
         self.event_console.add_events(events)
+
+        return step_count
+
+    def handle_ai(self, steps: int) -> None:
+        for i in range(steps):
+            for mob in self.mobs:
+                if mob.ai_type == AIType.MINDLESS:
+                    self._do_mindless_ai(mob)
+                else:
+                    print("WARNING: Unhandled AI type")
+
+    def _do_mindless_ai(self, mob: Mob) -> None:
+        moves = [(1, 0), (-1, 0), (0, 1), (0, -1)]
+        random.shuffle(moves)
+
+        if random.random() > 0.75:
+            for m in moves:
+                dx, dy = m
+                newx, newy = mob.x + dx, mob.y + dy
+                if self.world_console.map.map.walkable[newy][newx]:
+                    mob.move_to(newx, newy)
+                    break
 
     def on_mouse(self, mouse) -> List[GameEvent]:
         return []
@@ -272,7 +304,7 @@ class Ardor:
         return []
 
 
-def main():
+def main() -> None:
     ardor = Ardor()
     ardor.on_enter()
     root_console = tcod.console_init_root(
@@ -282,7 +314,11 @@ def main():
         root_console.default_fg = (255, 255, 255)
         root_console.default_bg = (0, 0, 0)
 
-        ardor.handle_events()
+        steps = ardor.handle_events()
+
+        if steps > 0:
+            ardor.handle_ai(steps)
+
         root_console.clear()
         ardor.render()
 
