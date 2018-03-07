@@ -15,6 +15,8 @@ class Entity:
 
         self.lit = False
 
+        self.walkable = False
+
     def move_to(self, new_x: int, new_y: int) -> None:
         self.x = new_x
         self.y = new_y

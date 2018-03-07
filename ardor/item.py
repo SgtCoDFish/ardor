@@ -40,3 +40,4 @@ class ItemEntity(Entity):
     def __init__(self, x: int, y: int, item: Item) -> None:
         Entity.__init__(self, x, y, item.symbol)
         self.item = item
+        self.walkable = True

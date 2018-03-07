@@ -9,6 +9,7 @@ from ardor.inventory import PickupResult
 from ardor.stats import Stats
 from ardor.mobs import Mob
 from ardor.ai import AIType
+from ardor.entity import Battler
 from ardor.events import (
     GameEvent, MovementEvent, NothingThereEvent,
     PickupEvent, InventoryFullEvent, ItemDroppedEvent,
@@ -294,17 +295,24 @@ class Ardor:
         dest_x = self.player.x + x
         dest_y = self.player.y + y
 
-        if SAMPLE_MAP[dest_y][dest_x] == ' ':
+        thing = self.world_console.is_walkable(dest_x, dest_y)
+
+        if thing is True:
             self.player.move_to(dest_x, dest_y)
-            tcod.console_put_char(self.world_console.console,
-                                  self.player.x, self.player.y, '@',
-                                  tcod.BKGND_NONE)
             self.world_console.recompute_lighting = True
             if self.player.torch is True:
                 self.player.stats.cap -= TORCH_DRAIN
                 if self.player.stats.cap == 0:
                     self.player.torch = False
             return [MovementEvent(self.player, dest_x, dest_y)]
+
+        if thing is not None:
+            if isinstance(thing, Battler):
+                # TODO: ATTACK
+                print("player attack")
+                return []
+            else:
+                return []
 
         return []
 

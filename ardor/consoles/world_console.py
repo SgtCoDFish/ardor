@@ -8,7 +8,7 @@ from ardor.entity import Entity
 from ardor.player import Player
 from ardor.item import ItemEntity
 
-from typing import Optional, List  # noqa
+from typing import Optional, List, Union  # noqa
 
 
 DARK_WALL = tcod.Color(0, 0, 100)
@@ -93,3 +93,13 @@ class WorldConsole(Console):
                 e.undraw(self.console)
 
         self.player.draw(self.console)
+
+    def is_walkable(self, dest_x: int, dest_y: int) -> Union[bool, Entity]:
+        for e in self.entities:
+            if e.walkable:
+                continue
+
+            if e.x == dest_x and e.y == dest_y:
+                return e
+
+        return bool(self.map.map.walkable[dest_y][dest_x])
