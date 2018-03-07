@@ -184,6 +184,11 @@ class Ardor:
                     print("WARNING: Unhandled AI type")
 
     def _do_mindless_ai(self, mob: Mob) -> None:
+        if mob.distance_to(self.player) <= 3.0:
+            # TODO: attack
+            print("ATTACK!", mob.distance_to(self.player))
+            return
+
         moves = [(1, 0), (-1, 0), (0, 1), (0, -1)]
         random.shuffle(moves)
 

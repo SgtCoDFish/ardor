@@ -1,4 +1,5 @@
 import tcod
+import math
 
 from ardor.stats import Stats
 
@@ -21,6 +22,12 @@ class Entity:
     def draw(self, console: tcod.console.Console) -> None:
         tcod.console_put_char(console, self.x, self.y,
                               self.symbol, tcod.BKGND_NONE)
+
+    def distance_to(self, other: 'Entity') -> float:
+        xdiff = self.x - other.x
+        ydiff = self.y - other.y
+
+        return math.sqrt(xdiff * xdiff + ydiff * ydiff)
 
     def undraw(self, console: tcod.console.Console) -> None:
         tcod.console_put_char(console, self.x, self.y,
