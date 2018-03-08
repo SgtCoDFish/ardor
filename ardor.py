@@ -289,7 +289,7 @@ class Ardor:
                     continue
 
                 if name == "drop":
-                    self.player.inventory.contents.remove(item)
+                    self.player.inventory.remove_item(item)
 
                     item_entity = ItemEntity(
                         self.player.x, self.player.y,
@@ -298,12 +298,12 @@ class Ardor:
                     self.world_console.add_entity(item_entity)
                     return [ItemDroppedEvent(self.player, item)]
                 elif name == "quaff":
-                    self.player.inventory.contents.remove(item)
+                    self.player.inventory.remove_item(item)
 
                     self.player.stats.hp += item.potency
                     return [HealingPotionEvent(self.player, item)]
                 elif name == "capify":
-                    self.player.inventory.contents.remove(item)
+                    self.player.inventory.remove_item(item)
                     cap_val = item.energy_density * item.mass
                     self.player.stats.cap += cap_val
                     return [CapifyEvent(self.player, item, cap_val)]

@@ -26,3 +26,13 @@ class Inventory:
         self.capacity -= item.volume
 
         return PickupResult.SUCCESS
+
+    def remove_item(self, item: Item) -> bool:
+        try:
+            self.contents.remove(item)
+        except ValueError:
+            print("WARNING: Tried to remove", item.name, "but not found")
+            return False
+
+        self.capacity += item.volume
+        return True

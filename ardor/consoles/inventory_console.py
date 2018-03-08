@@ -19,9 +19,9 @@ class InventoryConsole(Console):
         self.target = target
         self.headings = [
             " ",
-            "Name".ljust(13),
+            "Name".ljust(10),
             "Mass",
-            "Volume"
+            "Size"
         ]
         self._cursor = 0
         self._page = 0
@@ -65,7 +65,11 @@ class InventoryConsole(Console):
     def render(self) -> None:
         self.clear()
         self.console.default_fg = tcod.white
-        self.console.default_bg = tcod.red
+        self.console.default_bg = tcod.dark_grey
+
+        self.console.print_frame(
+            1, 1, self.width - 2, self.height - 2, clear=False
+        )
 
         inv_count = len(self.target.contents)
 
@@ -86,25 +90,36 @@ class InventoryConsole(Console):
         headings = lines[0:2]
         lines = lines[2:]
 
-        back_msg = "ESC: Back"
+        back_msg = "ESC: back"
         self.console.print_(
-            self.width - 2 - len(back_msg), self.height - 2,
+            self.width - 3 - len(back_msg), self.height - 2,
             back_msg, tcod.BKGND_SET, tcod.LEFT
         )
 
         offset_x = (self.width - len(headings[0])) // 2
+        offset_y = 3
 
         for i, l in enumerate(headings):
             self.console.print_(
-                offset_x, i + 1, l, tcod.BKGND_SET, tcod.LEFT
+                offset_x, i + offset_y, l, tcod.BKGND_SET, tcod.LEFT
             )
+
+        cap_string = "Size Used: {:.2f}/{:.2f}".format(
+            self.target.max_capacity - self.target.capacity,
+            self.target.max_capacity
+        )
+
+        self.console.print_(
+            self.width - 2 - len(cap_string), self.height - 4,
+            cap_string, tcod.BKGND_SET, tcod.LEFT
+        )
 
         if len(lines) == 0:
             return
 
         for i in range(len(lines)):
             self.console.print_(
-                offset_x, i + len(headings) + 1,
+                offset_x, i + len(headings) + offset_y,
                 lines[i], tcod.BKGND_SET, tcod.LEFT
             )
 
@@ -115,7 +130,7 @@ class InventoryConsole(Console):
         )
 
         self.console.print_(
-            1, self.height - 2,
+            3, self.height - 2,
             actions, tcod.BKGND_SET, tcod.LEFT
         )
 

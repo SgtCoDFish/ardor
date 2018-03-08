@@ -40,9 +40,9 @@ class World1(World):
     player_start_y = 10
 
     items = [ItemEntity(
-        34, 12, Item("d", "Dagger", 1.0, 6.0)
+        34, 12, Item("d", "Dagger", 1.0, 3.0)
     ), ItemEntity(
-        6, 5, Item("s", "Sword", 2.0, 9.0)
+        6, 5, Item("s", "Sword", 2.0, 6.0)
     ), ItemEntity(
         21, 2, Fuel(
             "w", "Wood", 3.0 + random.random(), 2, 1.5

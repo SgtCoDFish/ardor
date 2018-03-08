@@ -48,7 +48,10 @@ class HUDConsole(Console):
                 hp_color, tcod.COLCTRL_STOP,
                 tcod.COLCTRL_4, tcod.COLCTRL_STOP
             ),
-            "CAP: {:.2f}/{:.2f}",
+            "CAP: %c{:.2f}%c/%c{:.2f}%c" % (
+                tcod.COLCTRL_4, tcod.COLCTRL_STOP,
+                tcod.COLCTRL_4, tcod.COLCTRL_STOP
+            ),
             "TORCH: %c{}%c" % (torch_color, tcod.COLCTRL_STOP)
         ])
 

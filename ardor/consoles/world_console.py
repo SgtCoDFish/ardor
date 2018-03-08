@@ -7,15 +7,13 @@ from ardor.map import Map
 from ardor.entity import Entity
 from ardor.player import Player
 from ardor.item import ItemEntity
+from ardor.colors import (
+    DARK_WALL, DARK_GROUND,
+    LIGHT_GROUND, LIGHT_WALL
+)
 
 from typing import Optional, List, Union  # noqa
 
-
-NOTHING = tcod.Color(0, 0, 0)
-DARK_WALL = tcod.Color(0, 0, 100)
-DARK_GROUND = tcod.Color(50, 50, 150)
-LIGHT_WALL = tcod.Color(0, 0, 150)
-LIGHT_GROUND = tcod.Color(75, 75, 225)
 
 TORCH_RADIUS = 5
 
@@ -26,6 +24,7 @@ class WorldConsole(Console):
         super().__init__(x, y, world_map.width, world_map.height)
         self.player = player
         self.map = world_map
+
         self.recompute_lighting = True
 
         self.light_map_bg = np.full(self.map.grid.shape + (3,), LIGHT_GROUND,
@@ -37,7 +36,7 @@ class WorldConsole(Console):
 
         self.light_walls = True
 
-        self.nothing = np.full(self.map.grid.shape + (3,), NOTHING,
+        self.nothing = np.full(self.map.grid.shape + (3,), tcod.black,
                                dtype=np.uint8)
         self.discovered = np.full(self.map.grid.shape, False,
                                   dtype=np.bool_)
@@ -99,7 +98,6 @@ class WorldConsole(Console):
                 e.draw(self.console)
             else:
                 e.lit = False
-                e.undraw(self.console)
 
         self.player.draw(self.console)
 
