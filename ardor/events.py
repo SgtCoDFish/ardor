@@ -2,7 +2,7 @@ import abc
 
 from ardor.entity import Entity
 from ardor.attack import Attack
-from ardor.item import Item
+from ardor.item import Item, HealingPotion
 
 
 class GameEvent(abc.ABC):
@@ -72,18 +72,18 @@ class NothingThereEvent(GameEvent):
 
 class HealingPotionEvent(GameEvent):
 
-    def __init__(self, entity: Entity, potency: int) -> None:
-        super().__init__("{} healed for {} with the potion".format(
-            entity.symbol, potency
+    def __init__(self, entity: Entity, potion: HealingPotion) -> None:
+        super().__init__("{} healed for {} with the {}".format(
+            entity.symbol, potion.potency, potion.name
         ), emit=True)
         self.entity = entity
-        self.potency = potency
+        self.potion = potion
 
 
 class CapifyEvent(GameEvent):
 
     def __init__(self, entity: Entity, target: Item, caps: float) -> None:
-        super().__init__("{} capified {} for {:.2f}".format(
+        super().__init__("{} capified {} for {:.2f} caps".format(
             entity.symbol, target.name, caps
         ), emit=True)
 

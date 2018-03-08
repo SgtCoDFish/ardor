@@ -292,9 +292,11 @@ class Ardor:
             x, y = MOVE_KEYS[key.c]
             self.inventory_console.cursor += y
         elif key.vk == tcod.KEY_CHAR:
-            item = self.player.inventory.contents[
-                self.inventory_console.inventory_index()
-            ]
+            try:
+                idx = self.inventory_console.inventory_index()
+                item = self.player.inventory.contents[idx]
+            except IndexError:
+                return []
 
             for name, char in item.actions:
                 if key.c != ord(char[0]):
@@ -313,7 +315,7 @@ class Ardor:
                     self.player.inventory.contents.remove(item)
 
                     self.player.stats.hp += item.potency
-                    return [HealingPotionEvent(self.player, item.potency)]
+                    return [HealingPotionEvent(self.player, item)]
                 elif name == "capify":
                     self.player.inventory.contents.remove(item)
                     cap_val = item.energy_density * item.mass
