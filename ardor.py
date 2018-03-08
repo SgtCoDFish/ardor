@@ -23,6 +23,7 @@ from ardor.consoles import (
     EventConsole, WorldConsole, HUDConsole, InventoryConsole
 )
 from ardor.states import State
+from ardor.worlds.world1 import World1
 
 from typing import List, Iterator, MutableSet, Tuple  # noqa
 
@@ -30,40 +31,11 @@ from typing import List, Iterator, MutableSet, Tuple  # noqa
 ROOT_WIDTH = 80
 ROOT_HEIGHT = 50
 
-WORLD_WIDTH = 46
-WORLD_HEIGHT = 20
-
-WORLD_SCREEN_X = ROOT_WIDTH - WORLD_WIDTH - 1
-WORLD_SCREEN_Y = 1
-
 TORCH_DRAIN = 1.5
 
 font = os.path.join('data/fonts/consolas12x12_gs_tc.png')
 tcod.console_set_custom_font(
     font, tcod.FONT_TYPE_GREYSCALE | tcod.FONT_LAYOUT_TCOD)
-
-SAMPLE_MAP = [
-    '##############################################',
-    '#######################      #################',
-    '######    ###########    #     ###############',
-    '#####      ###########  ###        #         #',
-    '####        ######      #####      =         #',
-    '###         ####       ########    #         #',
-    '###         ###      ###########  ######## ###',
-    '######### ######    ######             ### ###',
-    '########   #######  ######   #     #   ### ###',
-    '########   ######      ###                 ###',
-    '########                               #######',
-    '####       ######      ###   #     #   #######',
-    '#### ###   ########## ####             #######',
-    '#### ###   ##########   ###########=##########',
-    '#### ##################   #####          #####',
-    '#### ###             #### #####          #####',
-    '####           #     ####                #####',
-    '########       #     #### #####          #####',
-    '########       #####      ####################',
-    '##############################################',
-]
 
 MOVE_KEYS = {
     ord('k'): (0, -1),
@@ -90,7 +62,7 @@ class Ardor:
         self.player.inventory.add_item(HealingPotion(5))
         for i in range(2):
             self.player.inventory.add_item(Fuel(
-                "c", "Coal", i + 1.0 + random.random(), 1, 2.0
+                "c", "Coal", i + 1.0 + random.random(), 1, 2.75
             ))
 
         econsole_height = ROOT_HEIGHT // 2
@@ -99,10 +71,17 @@ class Ardor:
             width=30, height=econsole_height
         )
 
+        self.worlds = [
+            World1(ROOT_WIDTH)
+        ]
+
+        self.current_world = self.worlds[0]
+
         self.world_console = WorldConsole(
-            x=WORLD_SCREEN_X, y=WORLD_SCREEN_Y,
+            x=self.current_world.x, y=self.current_world.y,
             world_map=Map(
-                WORLD_WIDTH, WORLD_HEIGHT, SAMPLE_MAP
+                self.current_world.width, self.current_world.height,
+                self.current_world.base_map
             ),
             player=self.player
         )
@@ -123,6 +102,16 @@ class Ardor:
         ]  # type: List[Mob]
         self.world_console.add_entity(ItemEntity(
             34, 12, Item("d", "Dagger", 1.0, 6.0)
+        ))
+
+        self.world_console.add_entity(ItemEntity(
+            6, 5, Item("s", "Sword", 2.0, 9.0)
+        ))
+
+        self.world_console.add_entity(ItemEntity(
+            21, 2, Fuel(
+                "w", "Wood", 3.0 + random.random(), 2, 1.5
+            )
         ))
 
         for m in self.mobs:
@@ -279,6 +268,8 @@ class Ardor:
                     events.append(PickupEvent(self.player, item.item))
         elif key.c == ord('i'):
             self.state = State.INVENTORY
+        elif key.c == ord(']'):
+            print("(x, y) = ({}, {}))".format(self.player.x, self.player.y))
 
         return events
 
