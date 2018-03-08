@@ -4,7 +4,7 @@ import random
 
 from ardor.player import Player
 from ardor.map import Map
-from ardor.item import Item, ItemEntity, Fuel, HealingPotion
+from ardor.item import ItemEntity, Fuel, HealingPotion
 from ardor.inventory import PickupResult
 from ardor.stats import Stats
 from ardor.mobs import Mob
@@ -36,6 +36,9 @@ TORCH_DRAIN = 1.5
 font = os.path.join('data/fonts/consolas12x12_gs_tc.png')
 tcod.console_set_custom_font(
     font, tcod.FONT_TYPE_GREYSCALE | tcod.FONT_LAYOUT_TCOD)
+tcod.console_set_color_control(tcod.COLCTRL_1, tcod.red, tcod.black)
+tcod.console_set_color_control(tcod.COLCTRL_2, tcod.yellow, tcod.black)
+tcod.console_set_color_control(tcod.COLCTRL_3, tcod.green, tcod.black)
 
 MOVE_KEYS = {
     ord('k'): (0, -1),
@@ -55,10 +58,18 @@ MOVE_VKEYS = {
 class Ardor:
 
     def __init__(self):
-        random.seed(0)
         self.state = State.PLAY
 
-        self.player = Player(20, 10, '@', Stats(20, 100.0))
+        self.worlds = [
+            World1(ROOT_WIDTH)
+        ]
+
+        self.current_world = self.worlds[0]
+
+        self.player = Player(
+            self.current_world.player_start_x,
+            self.current_world.player_start_y, '@', Stats(20, 100.0))
+
         self.player.inventory.add_item(HealingPotion(5))
         for i in range(2):
             self.player.inventory.add_item(Fuel(
@@ -70,12 +81,6 @@ class Ardor:
             x=1, y=ROOT_HEIGHT-econsole_height,
             width=30, height=econsole_height
         )
-
-        self.worlds = [
-            World1(ROOT_WIDTH)
-        ]
-
-        self.current_world = self.worlds[0]
 
         self.world_console = WorldConsole(
             x=self.current_world.x, y=self.current_world.y,
@@ -100,19 +105,9 @@ class Ardor:
         self.mobs = [
             Mob(25, 10, 'G', Stats(5, 5), AIType.MINDLESS)
         ]  # type: List[Mob]
-        self.world_console.add_entity(ItemEntity(
-            34, 12, Item("d", "Dagger", 1.0, 6.0)
-        ))
 
-        self.world_console.add_entity(ItemEntity(
-            6, 5, Item("s", "Sword", 2.0, 9.0)
-        ))
-
-        self.world_console.add_entity(ItemEntity(
-            21, 2, Fuel(
-                "w", "Wood", 3.0 + random.random(), 2, 1.5
-            )
-        ))
+        for i in self.current_world.items:
+            self.world_console.add_entity(i)
 
         for m in self.mobs:
             self.world_console.add_entity(m)
@@ -344,6 +339,7 @@ class Ardor:
 
 
 def main() -> None:
+    random.seed(0)
     ardor = Ardor()
     ardor.on_enter()
     root_console = tcod.console_init_root(
