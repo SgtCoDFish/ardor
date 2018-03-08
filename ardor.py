@@ -10,11 +10,14 @@ from ardor.stats import Stats
 from ardor.mobs import Mob
 from ardor.ai import AIType
 from ardor.entity import Battler
-from ardor.attack import Attack, AttackType
+from ardor.attack import (  # noqa
+    Attack, MeleeAttack, CapBlastAttack
+)
 from ardor.events import (
     GameEvent, MovementEvent, NothingThereEvent,
     PickupEvent, InventoryFullEvent, ItemDroppedEvent,
-    HealingPotionEvent, AttackEvent, DeathEvent, PlayerDeathEvent
+    HealingPotionEvent, CapifyEvent,
+    AttackEvent, DeathEvent, PlayerDeathEvent
 )
 from ardor.consoles import (
     EventConsole, WorldConsole, HUDConsole, InventoryConsole
@@ -173,17 +176,16 @@ class Ardor:
             # elif key.c == ord('q'):
             #     raise SystemExit()
 
-        self.event_console.add_events(events)
-
         return events
 
-    def handle_ai(self, steps: int) -> None:
+    def handle_ai(self, steps: int) -> List[GameEvent]:
         for i in range(steps):
             for mob in self.mobs:
                 if mob.ai_type == AIType.MINDLESS:
-                    self._do_mindless_ai(mob)
+                    return self._do_mindless_ai(mob)
                 else:
                     print("WARNING: Unhandled AI type")
+        return []
 
     def process_attacks(self) -> List[GameEvent]:
         events = []  # type: List[GameEvent]
@@ -197,21 +199,21 @@ class Ardor:
         self.attacks.clear()
 
         for d, a in dead:
-            self.mobs.remove(d)
-            self.world_console.remove_entity(d)
-
             if d is self.player:
                 events.append(PlayerDeathEvent(d, a))
+                raise Exception("player died")
             else:
                 events.append(DeathEvent(d, a))
+                self.mobs.remove(d)
+                self.world_console.remove_entity(d)
 
         return events
 
-    def _do_mindless_ai(self, mob: Mob) -> None:
-        if mob.distance_to(self.player) <= 3.0:
-            # TODO: attack
-            print("ATTACK!", mob.distance_to(self.player))
-            return
+    def _do_mindless_ai(self, mob: Mob) -> List[GameEvent]:
+        attack = mob.do_attack(self.player)
+        if attack is not None:
+            self.attacks.append(attack)
+            return [AttackEvent(attack)]
 
         moves = [(1, 0), (-1, 0), (0, 1), (0, -1)]
         random.shuffle(moves)
@@ -225,6 +227,10 @@ class Ardor:
                     mob.move_to(newx, newy)
                     self.world_console.entity_grid[newy][newx].append(mob)
                     break
+
+            return [MovementEvent(mob, newx, newy)]
+
+        return []
 
     def on_mouse(self, mouse) -> List[GameEvent]:
         return []
@@ -310,7 +316,9 @@ class Ardor:
                     return [HealingPotionEvent(self.player, item.potency)]
                 elif name == "capify":
                     self.player.inventory.contents.remove(item)
-                    self.player.stats.cap += item.energy_density * item.mass
+                    cap_val = item.energy_density * item.mass
+                    self.player.stats.cap += cap_val
+                    return [CapifyEvent(self.player, item, cap_val)]
                 else:
                     print("WARNING: unhandled interaction:", name)
 
@@ -333,7 +341,7 @@ class Ardor:
 
         if thing is not None:
             if isinstance(thing, Battler):
-                atk = Attack(AttackType.MELEE, self.player, thing)
+                atk = MeleeAttack(self.player, thing)
                 self.attacks.append(atk)
                 return [AttackEvent(atk)]
             else:
@@ -355,11 +363,13 @@ def main() -> None:
         events = ardor.handle_events()
         steps = sum(e.steps for e in events)
 
-        ardor.process_attacks()
+        events += ardor.process_attacks()
 
         if steps > 0:
-            ardor.handle_ai(steps)
-            ardor.process_attacks()
+            events += ardor.handle_ai(steps)
+            events += ardor.process_attacks()
+
+        ardor.event_console.add_events(events)
 
         root_console.clear()
         ardor.render()

@@ -80,6 +80,14 @@ class HealingPotionEvent(GameEvent):
         self.potency = potency
 
 
+class CapifyEvent(GameEvent):
+
+    def __init__(self, entity: Entity, target: Item, caps: float) -> None:
+        super().__init__("{} capified {} for {:.2f}".format(
+            entity.symbol, target.name, caps
+        ), emit=True)
+
+
 class AttackEvent(GameEvent):
 
     def __init__(self, attack: Attack) -> None:
@@ -93,7 +101,7 @@ class DeathEvent(GameEvent):
 
     def __init__(self, entity: Entity, reason: Attack) -> None:
         super().__init__("{} died from a {} attack".format(
-            entity.symbol, reason.pretty()
+            entity.symbol, reason.pretty
         ), emit=True)
         self.entity = entity
         self.reason = reason
@@ -103,7 +111,7 @@ class PlayerDeathEvent(GameEvent):
 
     def __init__(self, entity: Entity, reason: Attack) -> None:
         super().__init__("{} died from a {} attack".format(
-            entity.symbol, reason.pretty()
+            entity.symbol, reason.pretty
         ), emit=True)
         self.entity = entity
         self.reason = reason
