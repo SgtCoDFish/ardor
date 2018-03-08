@@ -10,17 +10,18 @@ from ardor.stats import Stats
 from ardor.mobs import Mob
 from ardor.ai import AIType
 from ardor.entity import Battler
+from ardor.attack import Attack, AttackType
 from ardor.events import (
     GameEvent, MovementEvent, NothingThereEvent,
     PickupEvent, InventoryFullEvent, ItemDroppedEvent,
-    HealingPotionEvent
+    HealingPotionEvent, AttackEvent, DeathEvent, PlayerDeathEvent
 )
 from ardor.consoles import (
     EventConsole, WorldConsole, HUDConsole, InventoryConsole
 )
 from ardor.states import State
 
-from typing import List
+from typing import List, Iterator, MutableSet, Tuple  # noqa
 
 
 ROOT_WIDTH = 80
@@ -116,13 +117,15 @@ class Ardor:
 
         self.mobs = [
             Mob(25, 10, 'G', Stats(5, 5), AIType.MINDLESS)
-        ]
+        ]  # type: List[Mob]
         self.world_console.add_entity(ItemEntity(
             34, 12, Item("d", "Dagger", 1.0, 6.0)
         ))
 
         for m in self.mobs:
             self.world_console.add_entity(m)
+
+        self.attacks = []  # type: List[Attack]
 
     def on_enter(self):
         tcod.sys_set_fps(60)
@@ -147,7 +150,7 @@ class Ardor:
         if self.state == State.INVENTORY:
             self.inventory_console.blit(target)
 
-    def handle_events(self) -> int:
+    def handle_events(self) -> List[GameEvent]:
         key = tcod.Key()
         mouse = tcod.Mouse()
         events = []  # type: List[GameEvent]
@@ -170,11 +173,9 @@ class Ardor:
             # elif key.c == ord('q'):
             #     raise SystemExit()
 
-        step_count = sum(int(isinstance(e, MovementEvent)) for e in events)
-
         self.event_console.add_events(events)
 
-        return step_count
+        return events
 
     def handle_ai(self, steps: int) -> None:
         for i in range(steps):
@@ -183,6 +184,28 @@ class Ardor:
                     self._do_mindless_ai(mob)
                 else:
                     print("WARNING: Unhandled AI type")
+
+    def process_attacks(self) -> List[GameEvent]:
+        events = []  # type: List[GameEvent]
+        dead = set()  # type: MutableSet[Tuple[Battler, Attack]]
+
+        for a in self.attacks:
+            a.target.stats.hp -= a.damage
+            if a.target.stats.hp == 0:
+                dead.add((a.target, a))
+
+        self.attacks.clear()
+
+        for d, a in dead:
+            self.mobs.remove(d)
+            self.world_console.remove_entity(d)
+
+            if d is self.player:
+                events.append(PlayerDeathEvent(d, a))
+            else:
+                events.append(DeathEvent(d, a))
+
+        return events
 
     def _do_mindless_ai(self, mob: Mob) -> None:
         if mob.distance_to(self.player) <= 3.0:
@@ -198,7 +221,9 @@ class Ardor:
                 dx, dy = m
                 newx, newy = mob.x + dx, mob.y + dy
                 if self.world_console.map.map.walkable[newy][newx]:
+                    self.world_console.entity_grid[mob.y][mob.x].remove(mob)
                     mob.move_to(newx, newy)
+                    self.world_console.entity_grid[newy][newx].append(mob)
                     break
 
     def on_mouse(self, mouse) -> List[GameEvent]:
@@ -308,9 +333,9 @@ class Ardor:
 
         if thing is not None:
             if isinstance(thing, Battler):
-                # TODO: ATTACK
-                print("player attack")
-                return []
+                atk = Attack(AttackType.MELEE, self.player, thing)
+                self.attacks.append(atk)
+                return [AttackEvent(atk)]
             else:
                 return []
 
@@ -327,10 +352,14 @@ def main() -> None:
         root_console.default_fg = (255, 255, 255)
         root_console.default_bg = (0, 0, 0)
 
-        steps = ardor.handle_events()
+        events = ardor.handle_events()
+        steps = sum(e.steps for e in events)
+
+        ardor.process_attacks()
 
         if steps > 0:
             ardor.handle_ai(steps)
+            ardor.process_attacks()
 
         root_console.clear()
         ardor.render()

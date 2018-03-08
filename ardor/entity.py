@@ -36,7 +36,9 @@ class Entity:
                               " ", tcod.BKGND_NONE)
 
 
-class Battler:
+class Battler(Entity):
 
-    def __init__(self, stats: Stats) -> None:
+    def __init__(self, initial_x: int, initial_y: int,
+                 symbol: str, stats: Stats) -> None:
+        super().__init__(initial_x, initial_y, symbol)
         self.stats = stats

@@ -23,5 +23,5 @@ class Stats:
         return self._cap
 
     @cap.setter
-    def cap(self, cap) -> float:
+    def cap(self, cap) -> None:
         self._cap = clamp(cap, 0.0, self.max_cap)
