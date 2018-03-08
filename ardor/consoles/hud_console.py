@@ -44,11 +44,11 @@ class HUDConsole(Console):
                 tcod.COLCTRL_4, tcod.COLCTRL_STOP
             ),
             "",
-            "HP: %c{}%c/%c{}%c" % (
+            "HP:    %c{}%c/%c{}%c" % (
                 hp_color, tcod.COLCTRL_STOP,
                 tcod.COLCTRL_4, tcod.COLCTRL_STOP
             ),
-            "CAP: %c{:.2f}%c/%c{:.2f}%c" % (
+            "CAPS:  %c{:.2f}%c/%c{:.2f}%c" % (
                 tcod.COLCTRL_4, tcod.COLCTRL_STOP,
                 tcod.COLCTRL_4, tcod.COLCTRL_STOP
             ),
