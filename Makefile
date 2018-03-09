@@ -29,6 +29,10 @@ dist/ardor-ubuntu.zip: $(SOURCES) README.md run.sh install-ubuntu.sh data/fonts/
 	mkdir -p dist
 	zip $@ $^
 
+dist/ardor-debian.zip: $(SOURCES) README.md run.sh install-debian.sh data/fonts/consolas12x12_gs_tc.png
+	mkdir -p dist
+	zip $@ $^
+
 dist/ardor-macos.zip: $(SOURCES) README.md run.sh install-macos.sh data/fonts/consolas12x12_gs_tc.png
 	mkdir -p dist
 	zip $@ $^
