@@ -3,7 +3,7 @@ set -eu -o pipefail
 
 echo "Setting up ARDOR. This may take a short while."
 
-(which python3 &> /dev/null) || (echo -e "\033[0;31mERROR:\033[0m python3 not found.\nOn Linux: Install using your system package manager - e.g. sudo apt install python3\nOn macOS: Install homebrew if you don't have it, and install python through homebrew" && exit 1)
+(which python3 &> /dev/null) || (echo -e "\033[0;31mERROR:\033[0m python3 not found.\nInstall homebrew if you don't have it, and install python through homebrew using brew install python3" && exit 1)
 
 python3 -m venv venv &> /dev/null
 ./venv/bin/python -m pip install --upgrade pip setuptools wheel &> /dev/null

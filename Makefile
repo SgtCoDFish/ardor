@@ -1,4 +1,4 @@
-.PHONY: pyenv pyenv_system mypy
+.PHONY: pyenv pyenv_system mypy pyinstaller
 
 SOURCES := ardor.py $(shell echo ardor/*.py) $(shell echo ardor/worlds/*.py) $(shell echo ardor/consoles/*.py)
 
@@ -12,7 +12,7 @@ pyenv_system:
 mypy:
 	mypy ardor.py --ignore-missing-imports
 
-dist/ardor: $(SOURCES) pkg/hook-tdl.py venv/build
+pyinstaller: $(SOURCES) pkg/hook-tdl.py venv/build
 	pyinstaller --additional-hooks-dir=./pkg/ -F ardor.py
 
 venv/run: requirements.txt pyenv
@@ -25,6 +25,10 @@ venv/build: requirements_build.txt requirements.txt pyenv_system
 	python -m venv $@
 	$@/bin/python -m pip install -r $<
 
-dist/ardor.zip: $(SOURCES) run.sh install.sh data/fonts/consolas12x12_gs_tc.png
+dist/ardor-ubuntu.zip: $(SOURCES) run.sh install-ubuntu.sh data/fonts/consolas12x12_gs_tc.png
+	mkdir -p dist
+	zip $@ $^
+
+dist/ardor-macos.zip: $(SOURCES) run.sh install-macos.sh data/fonts/consolas12x12_gs_tc.png
 	mkdir -p dist
 	zip $@ $^
