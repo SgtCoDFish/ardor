@@ -4,16 +4,18 @@ from ardor.ai import AIType
 from ardor.entity import Battler
 from ardor.stats import Stats
 from ardor.attack import Attack, MeleeAttack
+from ardor.item import Item
 from ardor.inventory import Inventory
 
-from typing import Optional
+from typing import Optional, List
 
 
 class Mob(Battler):
 
     def __init__(self, initial_x: int, initial_y: int,
                  symbol: str, stats: Stats,
-                 ai_type: AIType) -> None:
+                 ai_type: AIType,
+                 inventory: List[Item]=None) -> None:
         super().__init__(initial_x, initial_y, symbol, stats)
 
         self.inventory = Inventory(5.0)
@@ -21,6 +23,11 @@ class Mob(Battler):
         self.ai_type = ai_type
 
         self.attack_types = [MeleeAttack]
+
+        if inventory is None:
+            inventory = []
+
+        self.inventory.contents += inventory
 
     def do_attack(self, target: Battler) -> Optional[Attack]:
         dist = self.distance_to(target)
