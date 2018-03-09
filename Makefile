@@ -25,10 +25,10 @@ venv/build: requirements_build.txt requirements.txt pyenv_system
 	python -m venv $@
 	$@/bin/python -m pip install -r $<
 
-dist/ardor-ubuntu.zip: $(SOURCES) run.sh install-ubuntu.sh data/fonts/consolas12x12_gs_tc.png
+dist/ardor-ubuntu.zip: $(SOURCES) README.md run.sh install-ubuntu.sh data/fonts/consolas12x12_gs_tc.png
 	mkdir -p dist
 	zip $@ $^
 
-dist/ardor-macos.zip: $(SOURCES) run.sh install-macos.sh data/fonts/consolas12x12_gs_tc.png
+dist/ardor-macos.zip: $(SOURCES) README.md run.sh install-macos.sh data/fonts/consolas12x12_gs_tc.png
 	mkdir -p dist
 	zip $@ $^
