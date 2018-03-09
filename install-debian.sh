@@ -7,6 +7,8 @@ echo "Setting up ARDOR. This may take a short while."
 
 (which python3 &> /dev/null) || (echo -e "\033[0;31mERROR:\033[0m python3 not found.\nInstall it through your package manager: sudo apt install python3" && exit 1)
 
+(dpkg -l | grep libsdl2-dev &> /dev/null) || (echo -e "\033[0;31mERROR:\033[0m libsdl2-dev not found.\nInstall using your system package manager - e.g. sudo apt-get install $PACKAGES" && exit 1)
+
 python3 -m venv venv &> /dev/null
 ./venv/bin/python -m pip install --upgrade pip setuptools wheel || (echo -e "\033[0;31mERROR:\033[0m Failed to install dependencies" && exit 1)
 
