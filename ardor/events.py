@@ -115,3 +115,27 @@ class PlayerDeathEvent(GameEvent):
         ), emit=True)
         self.entity = entity
         self.reason = reason
+
+
+class TakeAimEvent(GameEvent):
+
+    def __init__(self) -> None:
+        super().__init__("In which direction?", emit=True)
+
+
+class NeverMindEvent(GameEvent):
+
+    def __init__(self) -> None:
+        super().__init__("Never mind...", emit=True)
+
+
+class BlastMissEvent(GameEvent):
+
+    def __init__(self) -> None:
+        super().__init__("The cap blast fizzles without a target", emit=True)
+
+
+class BlastFizzleEvent(GameEvent):
+
+    def __init__(self) -> None:
+        super().__init__("Insufficient caps", emit=True)

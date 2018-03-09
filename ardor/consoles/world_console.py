@@ -1,10 +1,11 @@
 import tcod
+import random
 import numpy as np
 
 from .console import Console
 
 from ardor.map import Map
-from ardor.entity import Entity
+from ardor.entity import Entity, Battler
 from ardor.player import Player
 from ardor.item import ItemEntity
 from ardor.colors import (
@@ -54,6 +55,14 @@ class WorldConsole(Console):
     def remove_entity(self, entity: Entity) -> None:
         self.entities.remove(entity)
         self.entity_grid[entity.y][entity.x].remove(entity)
+
+    def get_battler(self, x: int, y: int) -> Optional[Battler]:
+        ents = self.entity_grid[y][x]
+
+        if len(ents) == 0:
+            return None
+
+        return random.choice(ents)
 
     def pop_item(self, x: int, y: int) -> Optional[ItemEntity]:
         ents = self.entity_grid[y][x]

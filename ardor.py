@@ -17,7 +17,8 @@ from ardor.events import (
     GameEvent, MovementEvent, NothingThereEvent,
     PickupEvent, InventoryFullEvent, ItemDroppedEvent,
     HealingPotionEvent, CapifyEvent,
-    AttackEvent, DeathEvent, PlayerDeathEvent
+    AttackEvent, DeathEvent, PlayerDeathEvent,
+    TakeAimEvent, NeverMindEvent, BlastFizzleEvent, BlastMissEvent
 )
 from ardor.consoles import (
     EventConsole, WorldConsole, HUDConsole, InventoryConsole
@@ -25,7 +26,7 @@ from ardor.consoles import (
 from ardor.states import State
 from ardor.worlds.world1 import World1
 
-from typing import List, Iterator, MutableSet, Tuple  # noqa
+from typing import List, Iterator, MutableSet, Tuple, Type  # noqa
 
 
 ROOT_WIDTH = 80
@@ -113,6 +114,7 @@ class Ardor:
             self.world_console.add_entity(m)
 
         self.attacks = []  # type: List[Attack]
+        self.aim_type = None  # type: Type[Attack]
 
     def on_enter(self):
         tcod.sys_set_fps(60)
@@ -224,6 +226,8 @@ class Ardor:
             return self._on_key_play(key)
         elif self.state == State.INVENTORY:
             return self._on_key_inventory(key)
+        elif self.state == State.AIMING:
+            return self._on_key_aiming(key)
         else:
             print("Unhandled state:", self.state)
             return []
@@ -263,6 +267,13 @@ class Ardor:
                     events.append(PickupEvent(self.player, item.item))
         elif key.c == ord('i'):
             self.state = State.INVENTORY
+        elif key.c == ord('b'):
+            if self.player.stats.cap < 10:
+                events.append(BlastFizzleEvent())
+            else:
+                self.state = State.AIMING
+                self.aim_type = CapBlastAttack
+                events.append(TakeAimEvent())
         elif key.c == ord(']'):
             print("(x, y) = ({}, {}))".format(self.player.x, self.player.y))
 
@@ -311,6 +322,37 @@ class Ardor:
                     print("WARNING: unhandled interaction:", name)
 
         return []
+
+    def _on_key_aiming(self, key: tcod.Key) -> List[GameEvent]:
+        if key.vk in MOVE_VKEYS:
+            x, y = MOVE_VKEYS[key.vk]
+            return self._do_aim_type(x, y)
+        elif key.c in MOVE_KEYS:
+            x, y = MOVE_KEYS[key.c]
+            return self._do_aim_type(x, y)
+        elif key.vk == tcod.KEY_ESCAPE:
+            return [NeverMindEvent()]
+
+        return []
+
+    def _do_aim_type(self, x_dir: int, y_dir: int) -> List[GameEvent]:
+        self.state = State.PLAY
+        self.player.stats.cap -= 10
+
+        events = [BlastMissEvent()]
+        for i in range(1, self.aim_type.max_range + 1):
+            e = self.world_console.get_battler(
+                self.player.x + x_dir * i,
+                self.player.y + y_dir * i
+            )
+
+            if e is not None:
+                atk = self.aim_type(self.player, e)
+                self.attacks.append(atk)
+                events = [AttackEvent(atk)]
+                break
+
+        return events
 
     def _do_move(self, x: int, y: int) -> List[GameEvent]:
         dest_x = self.player.x + x

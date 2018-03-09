@@ -14,19 +14,16 @@ class Attack(abc.ABC):
         self.attacker = attacker
         self.target = target
 
-        self.damage = self._calculate()
-
-    def _calculate(self) -> int:
-        return 4
-
 
 class MeleeAttack(Attack):
 
     max_range = 1
     pretty = "melee"
+    damage = 3
 
 
 class CapBlastAttack(Attack):
 
     max_range = 5
     pretty = "cap blast"
+    damage = 8
