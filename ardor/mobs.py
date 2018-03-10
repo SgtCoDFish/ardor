@@ -40,3 +40,11 @@ class Mob(Battler):
             return None
 
         return random.choice(valid_attacks)(self, target)
+
+    def __str__(self) -> str:
+        return "{} @ ({}, {})".format(
+            self.symbol, self.x, self.y
+        )
+
+    def __repr__(self) -> str:
+        return str(self)

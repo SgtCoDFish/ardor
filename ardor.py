@@ -72,8 +72,9 @@ class Ardor:
         self.player = Player(
             self.current_world.player_start_x,
             self.current_world.player_start_y, '@',
-            Stats(20, 100.0, 5, 2, 7, 3)
+            Stats(30, 50.0, 5, 2, 10, 3)
         )
+        self.player.stats.cap = self.player.stats.max_cap
 
         self.player.inventory.add_item(HealingPotion(5))
         for i in range(2):
@@ -217,13 +218,16 @@ class Ardor:
         return events
 
     def handle_ai(self, steps: int) -> List[GameEvent]:
+        events = []
+
         for i in range(steps):
             for mob in self.current_world.mobs:
                 if mob.ai_type == AIType.MINDLESS:
-                    return self._do_mindless_ai(mob)
+                    events += self._do_mindless_ai(mob)
                 else:
                     print("WARNING: Unhandled AI type")
-        return []
+
+        return events
 
     def process_attacks(self) -> List[GameEvent]:
         events = []  # type: List[GameEvent]
@@ -483,9 +487,9 @@ def main() -> None:
         root_console.default_bg = (0, 0, 0)
 
         events = ardor.handle_events()
-        steps = sum(e.steps for e in events)
 
         events += ardor.process_attacks()
+        steps = sum(e.steps for e in events)
 
         if steps > 0:
             events += ardor.handle_ai(steps)

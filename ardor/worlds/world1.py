@@ -55,7 +55,7 @@ class World1(World):
     )]
 
     mobs = [
-        Mob(25, 10, 'G', Stats(5, 5, 6, 1, 1, 2), AIType.MINDLESS,
+        Mob(25, 10, 'g', Stats(5, 5, 6, 1, 1, 2), AIType.MINDLESS,
             [Item('/', "Stick", 1.50, 1),
              Item('\\', "Stick", 1.75, 1),
              Item('/', "Stick", 1.50, 1),
