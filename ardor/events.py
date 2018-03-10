@@ -153,3 +153,12 @@ class FailedDescendEvent(GameEvent):
     def __init__(self, descender: Entity) -> None:
         super().__init__("No stairs to descend!".format(descender.symbol),
                          emit=True)
+
+
+class GameStartEvent(GameEvent):
+
+    def __init__(self, player: Entity) -> None:
+        super().__init__("Welcome to ARDOR, {}!".format(
+            player.symbol
+        ), emit=True)
+        self.player = player

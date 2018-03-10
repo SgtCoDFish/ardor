@@ -7,3 +7,4 @@ class State(Enum):
     EQUIP_SPELL = 3
     AIMING = 4
     WON = 5
+    INTRO = 6

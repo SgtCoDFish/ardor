@@ -5,3 +5,4 @@ from .world_console import WorldConsole  # noqa
 from .event_console import EventConsole  # noqa
 from .win_console import WinConsole  # noqa
 from .controls_console import ControlsConsole  # noqa
+from .intro_console import IntroConsole  # noqa

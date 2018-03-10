@@ -19,11 +19,11 @@ from ardor.events import (
     HealingPotionEvent, CapifyEvent,
     AttackEvent, DeathEvent, PlayerDeathEvent,
     TakeAimEvent, NeverMindEvent, BlastFizzleEvent, BlastMissEvent,
-    FailedDescendEvent, DescendEvent
+    FailedDescendEvent, DescendEvent, GameStartEvent
 )
 from ardor.consoles import (
     EventConsole, WorldConsole, HUDConsole, InventoryConsole,
-    WinConsole, ControlsConsole
+    WinConsole, ControlsConsole, IntroConsole
 )
 from ardor.states import State
 from ardor.worlds import World
@@ -60,7 +60,7 @@ MOVE_VKEYS = {
 class Ardor:
 
     def __init__(self):
-        self.state = State.PLAY
+        self.state = State.INTRO
 
         self.worlds = [
             World1(ROOT_WIDTH),
@@ -108,6 +108,13 @@ class Ardor:
             height=((ROOT_HEIGHT * 3) // 4)
         )
 
+        self.intro_console = IntroConsole(
+            x=(ROOT_WIDTH - 47) // 2,
+            y=(ROOT_HEIGHT - 20) // 2,
+            width=47,
+            height=20
+        )
+
         control_width = 31
         control_height = 18
         self.controls_console = ControlsConsole(
@@ -140,6 +147,7 @@ class Ardor:
 
     def on_enter(self) -> None:
         tcod.sys_set_fps(60)
+        self.intro_console.clear()
         self.event_console.clear()
         self.world_console.clear()
         self.hud_console.clear()
@@ -152,7 +160,9 @@ class Ardor:
         self.hud_console.render()
         self.controls_console.render()
 
-        if self.state == State.INVENTORY:
+        if self.state == State.INTRO:
+            self.intro_console.render()
+        elif self.state == State.INVENTORY:
             self.inventory_console.render()
         elif self.state == State.WON:
             self.win_console.render()
@@ -163,7 +173,9 @@ class Ardor:
         self.hud_console.blit(target)
         self.controls_console.blit(target)
 
-        if self.state == State.INVENTORY:
+        if self.state == State.INTRO:
+            self.intro_console.blit(target)
+        elif self.state == State.INVENTORY:
             self.inventory_console.blit(target)
         elif self.state == State.WON:
             self.win_console.blit(target)
@@ -271,8 +283,9 @@ class Ardor:
         elif self.state == State.AIMING:
             return self._on_key_aiming(key)
         elif self.state == State.WON:
-            print("YOU WON!")
             return []
+        elif self.state == State.INTRO:
+            return self._on_key_intro(key)
         else:
             print("Unhandled state:", self.state)
             return []
@@ -392,6 +405,13 @@ class Ardor:
         elif key.vk == tcod.KEY_ESCAPE:
             self.state = State.PLAY
             return [NeverMindEvent()]
+
+        return []
+
+    def _on_key_intro(self, key: tcod.Key) -> List[GameEvent]:
+        if key.vk == tcod.KEY_SPACE:
+            self.state = State.PLAY
+            return [GameStartEvent(self.player)]
 
         return []
 

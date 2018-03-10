@@ -43,7 +43,7 @@ class World1(World):
     player_start_y = 10
 
     items = [ItemEntity(
-        35, 16, Item("d", "Dagger", 1.0, 3)
+        40, 14, Item("d", "Dagger", 1.0, 3)
     ), ItemEntity(
         6, 5, Item("s", "Sword", 2.0, 6)
     ), ItemEntity(
@@ -59,11 +59,15 @@ class World1(World):
             [Item('/', "Stick", 1.50, 1),
              Item('\\', "Stick", 1.75, 1),
              Item('/', "Stick", 1.50, 1),
-             Item('b', "Bone", 2.0, 1)]
-        ),
-        Mob(32, 4, 'w', Stats(10, 25, 4, 2, 4, 4), AIType.MINDLESS,
+             Item('b', "Bone", 2.0, 1)]),
+        Mob(11, 17, 'G', Stats(5, 5, 6, 1, 1, 2), AIType.MINDLESS,
+            [Item('/', "Stick", 1.50, 1),
+             Item('\\', "Stick", 1.75, 1),
+             HealingPotion(4),
+             Item('/', "Stick", 1.50, 1),
+             Item('b', "Bone", 2.0, 1)]),
+        Mob(32, 4, 'w', Stats(10, 25, 5, 2, 6, 4), AIType.MINDLESS,
             [Item('/', "Stick", 1.5, 1),
              HealingPotion(6),
-             Fuel('u', "Uranium", 0.75, 2, 30.0)]
-        )
+             Fuel('u', "Uranium", 0.75, 2, 30.0)])
     ]
