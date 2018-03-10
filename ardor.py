@@ -23,7 +23,7 @@ from ardor.events import (
 )
 from ardor.consoles import (
     EventConsole, WorldConsole, HUDConsole, InventoryConsole,
-    WinConsole, ControlsConsole, IntroConsole
+    WinConsole, ControlsConsole, IntroConsole, GameOverConsole
 )
 from ardor.states import State
 from ardor.worlds import World
@@ -115,6 +115,13 @@ class Ardor:
             height=20
         )
 
+        self.game_over_console = GameOverConsole(
+            x=(ROOT_WIDTH - 37) // 2,
+            y=(ROOT_HEIGHT - 15) // 2,
+            width=37,
+            height=15
+        )
+
         control_width = 31
         control_height = 18
         self.controls_console = ControlsConsole(
@@ -148,6 +155,7 @@ class Ardor:
     def on_enter(self) -> None:
         tcod.sys_set_fps(60)
         self.intro_console.clear()
+        self.game_over_console.clear()
         self.event_console.clear()
         self.world_console.clear()
         self.hud_console.clear()
@@ -166,6 +174,8 @@ class Ardor:
             self.inventory_console.render()
         elif self.state == State.WON:
             self.win_console.render()
+        elif self.state == State.GAME_OVER:
+            self.game_over_console.render()
 
     def blit_consoles(self, target: tcod.console.Console) -> None:
         self.world_console.blit(target)
@@ -179,6 +189,8 @@ class Ardor:
             self.inventory_console.blit(target)
         elif self.state == State.WON:
             self.win_console.blit(target)
+        elif self.state == State.GAME_OVER:
+            self.game_over_console.blit(target)
 
     def handle_events(self) -> List[GameEvent]:
         key = tcod.Key()
@@ -190,16 +202,16 @@ class Ardor:
             events += self.on_mouse(mouse)
             events += self.on_key(key)
 
-            if key.vk == tcod.KEY_ENTER and key.lalt:
-                tcod.console_set_fullscreen(not tcod.console_is_fullscreen())
-            elif key.vk == tcod.KEY_PRINTSCREEN or key.c == 'p':
-                print("screenshot")
-                if key.lalt:
-                    tcod.console_save_apf(None, "samples.apf")
-                    print("apf")
-                else:
-                    tcod.sys_save_screenshot()
-                    print("png")
+            # if key.vk == tcod.KEY_ENTER and key.lalt:
+            #     tcod.console_set_fullscreen(not tcod.console_is_fullscreen())
+            # elif key.vk == tcod.KEY_PRINTSCREEN or key.c == 'p':
+            #     print("screenshot")
+            #     if key.lalt:
+            #         tcod.console_save_apf(None, "samples.apf")
+            #         print("apf")
+            #     else:
+            #         tcod.sys_save_screenshot()
+            #         print("png")
             # elif key.c == ord('q'):
             #     raise SystemExit()
 
@@ -236,7 +248,7 @@ class Ardor:
         for d, a in dead:
             if d is self.player:
                 events.append(PlayerDeathEvent(d, a))
-                raise Exception("player died")
+                self.state = State.GAME_OVER
             else:
                 events.append(DeathEvent(d, a))
                 self.current_world.mobs.remove(d)
@@ -286,6 +298,8 @@ class Ardor:
             return []
         elif self.state == State.INTRO:
             return self._on_key_intro(key)
+        elif self.state == State.GAME_OVER:
+            return []
         else:
             print("Unhandled state:", self.state)
             return []

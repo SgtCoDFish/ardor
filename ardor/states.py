@@ -8,3 +8,4 @@ class State(Enum):
     AIMING = 4
     WON = 5
     INTRO = 6
+    GAME_OVER = 7
