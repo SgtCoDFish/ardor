@@ -90,9 +90,9 @@ class CapifyEvent(GameEvent):
 
 class AttackEvent(GameEvent):
 
-    def __init__(self, attack: Attack) -> None:
+    def __init__(self, attack: Attack, damage: int) -> None:
         super().__init__("{} attacked {} for {}".format(
-            attack.attacker.symbol, attack.target.symbol, attack.damage
+            attack.attacker.symbol, attack.target.symbol, damage
         ), emit=True, steps=1)
         self.attack = attack
 

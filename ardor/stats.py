@@ -3,12 +3,19 @@ from ardor.util import clamp
 
 class Stats:
 
-    def __init__(self, max_hp: int, max_cap: float) -> None:
+    def __init__(self, max_hp: int, max_cap: float,
+                 attack: int, defence: int,
+                 intelligence: int, spirit: int) -> None:
         self.max_hp = max_hp
         self._hp = self.max_hp
 
         self.max_cap = max_cap
         self._cap = self.max_cap / 2.0
+
+        self.attack = attack
+        self.defence = defence
+        self.intelligence = intelligence
+        self.spirit = spirit
 
     @property
     def hp(self) -> int:

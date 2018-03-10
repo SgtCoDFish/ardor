@@ -55,15 +55,15 @@ class World1(World):
     )]
 
     mobs = [
-        Mob(25, 10, 'G', Stats(5, 5), AIType.MINDLESS,
+        Mob(25, 10, 'G', Stats(5, 5, 6, 1, 1, 2), AIType.MINDLESS,
             [Item('/', "Stick", 1.50, 1),
              Item('\\', "Stick", 1.75, 1),
              Item('/', "Stick", 1.50, 1),
              Item('b', "Bone", 2.0, 1)]
         ),
-        Mob(32, 4, 'w', Stats(10, 25), AIType.MINDLESS,
+        Mob(32, 4, 'w', Stats(10, 25, 4, 2, 4, 4), AIType.MINDLESS,
             [Item('/', "Stick", 1.5, 1),
              HealingPotion(6),
-             Fuel('u', "Uranium", 0.75, 2, 15.0)]
+             Fuel('u', "Uranium", 0.75, 2, 30.0)]
         )
     ]

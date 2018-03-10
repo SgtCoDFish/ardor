@@ -11,7 +11,7 @@ from ardor.mobs import Mob
 from ardor.ai import AIType
 from ardor.entity import Battler
 from ardor.attack import (  # noqa
-    Attack, MeleeAttack, CapBlastAttack
+    Attack, MeleeAttack, CapBlastAttack, DamageType
 )
 from ardor.events import (
     GameEvent, MovementEvent, NothingThereEvent,
@@ -69,7 +69,9 @@ class Ardor:
 
         self.player = Player(
             self.current_world.player_start_x,
-            self.current_world.player_start_y, '@', Stats(20, 100.0))
+            self.current_world.player_start_y, '@',
+            Stats(20, 100.0, 5, 2, 7, 3)
+        )
 
         self.player.inventory.add_item(HealingPotion(5))
         for i in range(2):
@@ -177,7 +179,15 @@ class Ardor:
         dead = set()  # type: MutableSet[Tuple[Battler, Attack]]
 
         for a in self.attacks:
-            a.target.stats.hp -= a.damage
+            if a.damage_type == DamageType.PHYSICAL:
+                damage = a.attacker.stats.attack - a.target.stats.defence
+            elif a.damage_type == DamageType.SPECIAL:
+                damage = a.attacker.stats.intelligence - a.target.stats.spirit
+            else:
+                damage = 1
+                print("WARNING: unknown damage type")
+            a.target.stats.hp -= damage
+            events.append(AttackEvent(a, damage))
             if a.target.stats.hp == 0:
                 dead.add((a.target, a))
 
@@ -203,7 +213,7 @@ class Ardor:
         attack = mob.do_attack(self.player)
         if attack is not None:
             self.attacks.append(attack)
-            return [AttackEvent(attack)]
+            return []
 
         moves = [(1, 0), (-1, 0), (0, 1), (0, -1)]
         random.shuffle(moves)
@@ -342,9 +352,8 @@ class Ardor:
 
     def _do_aim_type(self, x_dir: int, y_dir: int) -> List[GameEvent]:
         self.state = State.PLAY
-        self.player.stats.cap -= 10
+        self.player.stats.cap -= 10.0
 
-        events = [BlastMissEvent()]
         for i in range(1, self.aim_type.max_range + 1):
             e = self.world_console.get_battler(
                 self.player.x + x_dir * i,
@@ -354,10 +363,9 @@ class Ardor:
             if e is not None:
                 atk = self.aim_type(self.player, e)
                 self.attacks.append(atk)
-                events = [AttackEvent(atk)]
-                break
+                return []
 
-        return events
+        return [BlastMissEvent()]
 
     def _do_move(self, x: int, y: int) -> List[GameEvent]:
         dest_x = self.player.x + x
@@ -378,7 +386,7 @@ class Ardor:
             if isinstance(thing, Battler):
                 atk = MeleeAttack(self.player, thing)
                 self.attacks.append(atk)
-                return [AttackEvent(atk)]
+                return []
             else:
                 return []
 

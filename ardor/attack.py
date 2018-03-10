@@ -1,8 +1,15 @@
 import abc
 
+from enum import Enum
+
 from ardor.entity import Battler
 
 from typing import Dict  # noqa
+
+
+class DamageType(Enum):
+    PHYSICAL = 1
+    SPECIAL = 2
 
 
 class Attack(abc.ABC):
@@ -19,11 +26,11 @@ class MeleeAttack(Attack):
 
     max_range = 1
     pretty = "melee"
-    damage = 3
+    damage_type = DamageType.PHYSICAL
 
 
 class CapBlastAttack(Attack):
 
     max_range = 5
     pretty = "cap blast"
-    damage = 8
+    damage_type = DamageType.SPECIAL
