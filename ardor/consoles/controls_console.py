@@ -12,8 +12,10 @@ CONTROLS_TEXT = """
 
 
 %ci%c: inventory | %c,%c: pick up
-%c<%c: descend   | %cb%c: blast
+%c<%c: descend   | %cb%c: blast,
+     %ct%c: toggle torch
 """ % (
+    tcod.COLCTRL_3, tcod.COLCTRL_STOP,
     tcod.COLCTRL_3, tcod.COLCTRL_STOP,
     tcod.COLCTRL_3, tcod.COLCTRL_STOP,
     tcod.COLCTRL_3, tcod.COLCTRL_STOP,
