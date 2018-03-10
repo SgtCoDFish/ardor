@@ -15,3 +15,4 @@ Some items are better at replenishing caps than others. You can cap a Sword if y
 - 'b': Perform a cap blast in a direction you input
 - 't': Toggle torch
 - 'i': Show inventory (options are available per-item; use up/down to navigate)
+- '<': Descend stairs!
