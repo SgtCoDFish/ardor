@@ -18,7 +18,7 @@ class Mob(Battler):
                  inventory: List[Item]=None) -> None:
         super().__init__(initial_x, initial_y, symbol, stats)
 
-        self.inventory = Inventory(5.0)
+        self.inventory = Inventory(50.0)
 
         self.ai_type = ai_type
 
@@ -27,7 +27,8 @@ class Mob(Battler):
         if inventory is None:
             inventory = []
 
-        self.inventory.contents += inventory
+        for i in inventory:
+            self.inventory.add_item(i)
 
     def do_attack(self, target: Battler) -> Optional[Attack]:
         dist = self.distance_to(target)

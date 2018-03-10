@@ -36,3 +36,6 @@ class Inventory:
 
         self.capacity += item.volume
         return True
+
+    def size(self) -> int:
+        return len(self.contents)

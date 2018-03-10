@@ -1,6 +1,9 @@
 import random
 
-from ardor.item import Item, ItemEntity, Fuel
+from ardor.item import Item, ItemEntity, Fuel, HealingPotion
+from ardor.mobs import Mob
+from ardor.stats import Stats
+from ardor.ai import AIType
 
 from . import World
 
@@ -40,11 +43,27 @@ class World1(World):
     player_start_y = 10
 
     items = [ItemEntity(
-        34, 12, Item("d", "Dagger", 1.0, 3)
+        35, 16, Item("d", "Dagger", 1.0, 3)
     ), ItemEntity(
         6, 5, Item("s", "Sword", 2.0, 6)
     ), ItemEntity(
         21, 2, Fuel(
             "w", "Wood", 3.0 + random.random(), 2, 1
         )
+    ), ItemEntity(
+        37, 4, HealingPotion(7)
     )]
+
+    mobs = [
+        Mob(25, 10, 'G', Stats(5, 5), AIType.MINDLESS,
+            [Item('/', "Stick", 1.50, 1),
+             Item('\\', "Stick", 1.75, 1),
+             Item('/', "Stick", 1.50, 1),
+             Item('b', "Bone", 2.0, 1)]
+        ),
+        Mob(32, 4, 'w', Stats(10, 25), AIType.MINDLESS,
+            [Item('/', "Stick", 1.5, 1),
+             HealingPotion(6),
+             Fuel('u', "Uranium", 0.75, 2, 15.0)]
+        )
+    ]

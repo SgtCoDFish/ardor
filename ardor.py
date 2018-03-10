@@ -4,7 +4,7 @@ import random
 
 from ardor.player import Player
 from ardor.map import Map
-from ardor.item import ItemEntity, Fuel, HealingPotion
+from ardor.item import Item, ItemEntity, Fuel, HealingPotion
 from ardor.inventory import PickupResult
 from ardor.stats import Stats
 from ardor.mobs import Mob
@@ -24,7 +24,9 @@ from ardor.consoles import (
     EventConsole, WorldConsole, HUDConsole, InventoryConsole
 )
 from ardor.states import State
+from ardor.worlds import World
 from ardor.worlds.world1 import World1
+from ardor.worlds.world2 import World2
 
 from typing import List, Iterator, MutableSet, Tuple, Type  # noqa
 
@@ -37,9 +39,6 @@ TORCH_DRAIN = 1.5
 font = os.path.join('data/fonts/consolas12x12_gs_tc.png')
 tcod.console_set_custom_font(
     font, tcod.FONT_TYPE_GREYSCALE | tcod.FONT_LAYOUT_TCOD)
-tcod.console_set_color_control(tcod.COLCTRL_1, tcod.red, tcod.black)
-tcod.console_set_color_control(tcod.COLCTRL_2, tcod.yellow, tcod.black)
-tcod.console_set_color_control(tcod.COLCTRL_3, tcod.green, tcod.black)
 
 MOVE_KEYS = {
     ord('k'): (0, -1),
@@ -62,7 +61,8 @@ class Ardor:
         self.state = State.PLAY
 
         self.worlds = [
-            World1(ROOT_WIDTH)
+            World1(ROOT_WIDTH),
+            World2(ROOT_WIDTH)
         ]
 
         self.current_world = self.worlds[0]
@@ -74,22 +74,16 @@ class Ardor:
         self.player.inventory.add_item(HealingPotion(5))
         for i in range(2):
             self.player.inventory.add_item(Fuel(
-                "c", "Coal", i + 1.0 + random.random(), 1, 2.75
+                "c", "Coal", i + 1.5 + random.random(), 1, 2.75
             ))
+
+        self.attacks = []  # type: List[Attack]
+        self.aim_type = None  # type: Type[Attack]
 
         econsole_height = ROOT_HEIGHT // 2
         self.event_console = EventConsole(
             x=1, y=ROOT_HEIGHT-econsole_height,
             width=30, height=econsole_height
-        )
-
-        self.world_console = WorldConsole(
-            x=self.current_world.x, y=self.current_world.y,
-            world_map=Map(
-                self.current_world.width, self.current_world.height,
-                self.current_world.base_map
-            ),
-            player=self.player
         )
 
         self.hud_console = HUDConsole(
@@ -103,20 +97,25 @@ class Ardor:
             target=self.player.inventory
         )
 
-        self.mobs = [
-            Mob(25, 10, 'G', Stats(5, 5), AIType.MINDLESS)
-        ]  # type: List[Mob]
+        self.world_console = WorldConsole(
+            x=self.current_world.x, y=self.current_world.y,
+            world_map=Map(
+                self.current_world.width, self.current_world.height,
+                self.current_world.base_map
+            ),
+            player=self.player
+        )
 
         for i in self.current_world.items:
             self.world_console.add_entity(i)
 
-        for m in self.mobs:
+        for m in self.current_world.mobs:
             self.world_console.add_entity(m)
 
-        self.attacks = []  # type: List[Attack]
-        self.aim_type = None  # type: Type[Attack]
+    def init_world(world: World) -> None:
+        pass
 
-    def on_enter(self):
+    def on_enter(self) -> None:
         tcod.sys_set_fps(60)
         self.event_console.clear()
         self.world_console.clear()
@@ -166,7 +165,7 @@ class Ardor:
 
     def handle_ai(self, steps: int) -> List[GameEvent]:
         for i in range(steps):
-            for mob in self.mobs:
+            for mob in self.current_world.mobs:
                 if mob.ai_type == AIType.MINDLESS:
                     return self._do_mindless_ai(mob)
                 else:
@@ -190,8 +189,13 @@ class Ardor:
                 raise Exception("player died")
             else:
                 events.append(DeathEvent(d, a))
-                self.mobs.remove(d)
+                self.current_world.mobs.remove(d)
                 self.world_console.remove_entity(d)
+                if d.inventory.size() > 0:
+                    i = random.choice(d.inventory.contents)
+                    d.inventory.remove_item(i)
+
+                    self.world_console.add_entity(ItemEntity(d.x, d.y, i))
 
         return events
 
@@ -275,7 +279,7 @@ class Ardor:
                 self.aim_type = CapBlastAttack
                 events.append(TakeAimEvent())
         elif key.c == ord(']'):
-            print("(x, y) = ({}, {}))".format(self.player.x, self.player.y))
+            print("(x, y) = ({}, {})".format(self.player.x, self.player.y))
 
         return events
 
@@ -331,6 +335,7 @@ class Ardor:
             x, y = MOVE_KEYS[key.c]
             return self._do_aim_type(x, y)
         elif key.vk == tcod.KEY_ESCAPE:
+            self.state = State.PLAY
             return [NeverMindEvent()]
 
         return []
@@ -381,7 +386,7 @@ class Ardor:
 
 
 def main() -> None:
-    random.seed(0)
+    # random.seed(0)
     ardor = Ardor()
     ardor.on_enter()
     root_console = tcod.console_init_root(

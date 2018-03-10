@@ -57,7 +57,9 @@ class WorldConsole(Console):
         self.entity_grid[entity.y][entity.x].remove(entity)
 
     def get_battler(self, x: int, y: int) -> Optional[Battler]:
-        ents = self.entity_grid[y][x]
+        ents = list(
+            filter(lambda x: isinstance(x, Battler), self.entity_grid[y][x])
+        )
 
         if len(ents) == 0:
             return None
