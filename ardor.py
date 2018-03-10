@@ -27,8 +27,7 @@ from ardor.consoles import (
 )
 from ardor.states import State
 from ardor.worlds import World
-from ardor.worlds.world1 import World1
-from ardor.worlds.world2 import World2
+from ardor.worlds import World1, World2
 
 from typing import List, Iterator, MutableSet, Tuple, Type  # noqa
 
