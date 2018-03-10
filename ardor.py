@@ -4,7 +4,7 @@ import random
 
 from ardor.player import Player
 from ardor.map import Map
-from ardor.item import Item, ItemEntity, Fuel, HealingPotion
+from ardor.item import ItemEntity, Fuel, HealingPotion
 from ardor.inventory import PickupResult
 from ardor.stats import Stats
 from ardor.mobs import Mob
@@ -22,7 +22,8 @@ from ardor.events import (
     FailedDescendEvent, DescendEvent
 )
 from ardor.consoles import (
-    EventConsole, WorldConsole, HUDConsole, InventoryConsole
+    EventConsole, WorldConsole, HUDConsole, InventoryConsole,
+    WinConsole, ControlsConsole
 )
 from ardor.states import State
 from ardor.worlds import World
@@ -35,7 +36,7 @@ from typing import List, Iterator, MutableSet, Tuple, Type  # noqa
 ROOT_WIDTH = 80
 ROOT_HEIGHT = 50
 
-TORCH_DRAIN = 1.5
+TORCH_DRAIN = 1.25
 
 font = os.path.join('data/fonts/consolas12x12_gs_tc.png')
 tcod.console_set_custom_font(
@@ -101,6 +102,20 @@ class Ardor:
             target=self.player.inventory
         )
 
+        self.win_console = WinConsole(
+            x=(ROOT_WIDTH // 8), y=(ROOT_HEIGHT // 8),
+            width=((ROOT_WIDTH * 3) // 4),
+            height=((ROOT_HEIGHT * 3) // 4)
+        )
+
+        control_width = 31
+        control_height = 18
+        self.controls_console = ControlsConsole(
+            x=ROOT_WIDTH - control_width,
+            y=ROOT_HEIGHT - control_height,
+            width=control_width, height=control_height
+        )
+
         self.init_world(self.current_world)
 
     def init_world(self, world: World) -> None:
@@ -128,23 +143,30 @@ class Ardor:
         self.event_console.clear()
         self.world_console.clear()
         self.hud_console.clear()
+        self.controls_console.clear()
         self.render()
 
     def render(self) -> None:
         self.event_console.render()
         self.world_console.render()
         self.hud_console.render()
+        self.controls_console.render()
 
         if self.state == State.INVENTORY:
             self.inventory_console.render()
+        elif self.state == State.WON:
+            self.win_console.render()
 
     def blit_consoles(self, target: tcod.console.Console) -> None:
         self.world_console.blit(target)
         self.event_console.blit(target)
         self.hud_console.blit(target)
+        self.controls_console.blit(target)
 
         if self.state == State.INVENTORY:
             self.inventory_console.blit(target)
+        elif self.state == State.WON:
+            self.win_console.blit(target)
 
     def handle_events(self) -> List[GameEvent]:
         key = tcod.Key()
