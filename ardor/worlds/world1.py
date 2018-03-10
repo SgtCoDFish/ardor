@@ -48,7 +48,7 @@ class World1(World):
         6, 5, Item("s", "Sword", 2.0, 6)
     ), ItemEntity(
         21, 2, Fuel(
-            "w", "Wood", 3.0 + random.random(), 2, 1
+            "w", "Oak Wood", 3.0 + random.random(), 2, 2.5
         )
     ), ItemEntity(
         37, 4, HealingPotion(7)
@@ -69,5 +69,5 @@ class World1(World):
         Mob(32, 4, 'w', Stats(10, 25, 5, 2, 6, 4), AIType.MINDLESS,
             [Item('/', "Stick", 1.5, 1),
              HealingPotion(6),
-             Fuel('u', "Uranium", 0.75, 2, 30.0)])
+             Fuel('u', "Uranium", 0.75, 2, 40.0)])
     ]

@@ -109,9 +109,9 @@ class Ardor:
         )
 
         self.intro_console = IntroConsole(
-            x=(ROOT_WIDTH - 47) // 2,
+            x=(ROOT_WIDTH - 46) // 2,
             y=(ROOT_HEIGHT - 20) // 2,
-            width=47,
+            width=46,
             height=20
         )
 
