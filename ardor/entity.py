@@ -40,3 +40,10 @@ class Battler(Entity):
                  symbol: str, stats: Stats) -> None:
         super().__init__(initial_x, initial_y, symbol)
         self.stats = stats
+
+
+class Stairs(Entity):
+
+    def __init__(self, initial_x: int, initial_y: int) -> None:
+        super().__init__(initial_x, initial_y, '<')
+        self.walkable = True

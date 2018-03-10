@@ -1,7 +1,7 @@
 import tcod
 import numpy as np
 
-from typing import List
+from typing import List, Tuple
 
 
 class Map:
@@ -15,5 +15,12 @@ class Map:
 
         self.map = tcod.map_new(self.width, self.height)
 
-        self.map.walkable[:] = self.grid[:] == ' '
+        self.map.walkable[:] = (self.grid[:] == ' ') | (self.grid[:] == '<')
         self.map.transparent[:] = self.map.walkable[:] | (self.grid == '=')
+
+        self.stair_locations = []  # type: List[Tuple[int, int]]
+
+        for y in range(self.height):
+            for x in range(self.width):
+                if self.grid[y][x] == '<':
+                    self.stair_locations.append((x, y))

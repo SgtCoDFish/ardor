@@ -18,7 +18,8 @@ from ardor.events import (
     PickupEvent, InventoryFullEvent, ItemDroppedEvent,
     HealingPotionEvent, CapifyEvent,
     AttackEvent, DeathEvent, PlayerDeathEvent,
-    TakeAimEvent, NeverMindEvent, BlastFizzleEvent, BlastMissEvent
+    TakeAimEvent, NeverMindEvent, BlastFizzleEvent, BlastMissEvent,
+    FailedDescendEvent, DescendEvent
 )
 from ardor.consoles import (
     EventConsole, WorldConsole, HUDConsole, InventoryConsole
@@ -65,7 +66,8 @@ class Ardor:
             World2(ROOT_WIDTH)
         ]
 
-        self.current_world = self.worlds[0]
+        self.world_counter = 0
+        self.current_world = self.worlds[self.world_counter]
 
         self.player = Player(
             self.current_world.player_start_x,
@@ -99,6 +101,10 @@ class Ardor:
             target=self.player.inventory
         )
 
+        self.init_world(self.current_world)
+
+    def init_world(self, world: World) -> None:
+        self.current_world = world
         self.world_console = WorldConsole(
             x=self.current_world.x, y=self.current_world.y,
             world_map=Map(
@@ -108,14 +114,14 @@ class Ardor:
             player=self.player
         )
 
+        self.player.x = self.current_world.player_start_x
+        self.player.y = self.current_world.player_start_y
+
         for i in self.current_world.items:
             self.world_console.add_entity(i)
 
         for m in self.current_world.mobs:
             self.world_console.add_entity(m)
-
-    def init_world(world: World) -> None:
-        pass
 
     def on_enter(self) -> None:
         tcod.sys_set_fps(60)
@@ -242,6 +248,9 @@ class Ardor:
             return self._on_key_inventory(key)
         elif self.state == State.AIMING:
             return self._on_key_aiming(key)
+        elif self.state == State.WON:
+            print("YOU WON!")
+            return []
         else:
             print("Unhandled state:", self.state)
             return []
@@ -264,6 +273,20 @@ class Ardor:
                 self.player.torch = True
                 self.player.stats.cap -= TORCH_DRAIN
         elif key.c == ord(','):
+            if key.shift:
+                stairs = self.world_console.get_stairs(
+                    self.player.x, self.player.y)
+                if stairs is not None:
+                    self.world_counter += 1
+                    if self.world_counter == len(self.worlds):
+                        self.state = State.WON
+                    else:
+                        self.init_world(self.worlds[self.world_counter])
+
+                    return [DescendEvent(self.player)]
+                else:
+                    return [FailedDescendEvent(self.player)]
+
             item = self.world_console.pop_item(self.player.x, self.player.y)
 
             if item is None:

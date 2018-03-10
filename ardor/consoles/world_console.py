@@ -5,7 +5,7 @@ import numpy as np
 from .console import Console
 
 from ardor.map import Map
-from ardor.entity import Entity, Battler
+from ardor.entity import Entity, Battler, Stairs
 from ardor.player import Player
 from ardor.item import ItemEntity
 from ardor.colors import (
@@ -35,6 +35,8 @@ class WorldConsole(Console):
                                    dtype=np.uint8)
         self.dark_map_bg[self.map.grid[:] == '#'] = DARK_WALL
 
+        self.down_stairs = [Stairs(x, y) for x, y, in self.map.stair_locations]
+
         self.light_walls = True
 
         self.nothing = np.full(self.map.grid.shape + (3,), tcod.black,
@@ -48,6 +50,9 @@ class WorldConsole(Console):
             for j in range(len(i)):
                 i[j] = []
 
+        for e in self.down_stairs:
+            self.add_entity(e)
+
     def add_entity(self, entity: Entity) -> None:
         self.entities.append(entity)
         self.entity_grid[entity.y][entity.x].append(entity)
@@ -55,6 +60,16 @@ class WorldConsole(Console):
     def remove_entity(self, entity: Entity) -> None:
         self.entities.remove(entity)
         self.entity_grid[entity.y][entity.x].remove(entity)
+
+    def get_stairs(self, x: int, y: int) -> Optional[Stairs]:
+        ents = list(
+            filter(lambda x: isinstance(x, Stairs), self.entity_grid[y][x])
+        )
+
+        if len(ents) == 0:
+            return None
+
+        return random.choice(ents)
 
     def get_battler(self, x: int, y: int) -> Optional[Battler]:
         ents = list(

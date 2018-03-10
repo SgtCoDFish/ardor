@@ -139,3 +139,17 @@ class BlastFizzleEvent(GameEvent):
 
     def __init__(self) -> None:
         super().__init__("Insufficient caps", emit=True)
+
+
+class DescendEvent(GameEvent):
+
+    def __init__(self, descender: Entity) -> None:
+        super().__init__("{} descends the stairs".format(descender.symbol),
+                         emit=True)
+
+
+class FailedDescendEvent(GameEvent):
+
+    def __init__(self, descender: Entity) -> None:
+        super().__init__("No stairs to descend!".format(descender.symbol),
+                         emit=True)
