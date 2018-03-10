@@ -27,7 +27,7 @@ from ardor.consoles import (
 )
 from ardor.states import State
 from ardor.worlds import World
-from ardor.worlds import World1, World2
+from ardor.worlds import World1, World2, World3
 
 from typing import List, Iterator, MutableSet, Tuple, Type  # noqa
 
@@ -63,7 +63,8 @@ class Ardor:
 
         self.worlds = [
             World1(ROOT_WIDTH),
-            World2(ROOT_WIDTH)
+            World2(ROOT_WIDTH),
+            World3(ROOT_WIDTH)
         ]
 
         self.world_counter = 0
